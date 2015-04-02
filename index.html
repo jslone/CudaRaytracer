@@ -16,14 +16,14 @@
     <!-- HEADER -->
     <div id="header_wrap" class="outer">
         <header class="inner">
-          <a id="forkme_banner" href="https://github.com/jslone/Raytracer">View on GitHub</a>
+          <a id="forkme_banner" href="https://github.com/jslone/CudaRaytracer">View on GitHub</a>
 
           <h1 id="project_title">Raytracer</h1>
           <h2 id="project_tagline">CMU 15-418 - Adaptive Assignment for Real Time Raytracing</h2>
 
             <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/jslone/Raytracer/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/jslone/Raytracer/tarball/master">Download this project as a tar.gz file</a>
+              <a class="zip_download_link" href="https://github.com/jslone/CudaRaytracer/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/jslone/CudaRaytracer/tarball/master">Download this project as a tar.gz file</a>
             </section>
         </header>
     </div>
@@ -63,7 +63,27 @@
 <ul>
 <li>GHC Cluster NVIDIA GPUs</li>
 <li>Personal NVIDIA GPU</li>
-<li>Starter Code!?!? TODO fix</li>
+<li>Starter Code
+
+<ul>
+<li>References
+
+<ul>
+<li>PBRT code</li>
+<li>15-462 starter code</li>
+</ul>
+</li>
+<li>Existing Code to be Used
+
+<ul>
+<li>SDL: Used for cross platform drawing and input</li>
+<li>GLM: Used for vector and matrix operations</li>
+<li>TinyXML: Used for loading scenes created in xml from multiple objects</li>
+<li>tinyobjloader: Used for loading 3d objects to be rendered</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
 <h3>
@@ -111,7 +131,11 @@
 <h3>
 <a id="platform-choice" class="anchor" href="#platform-choice" aria-hidden="true"><span class="octicon octicon-link"></span></a>Platform Choice</h3>
 
-<p>CUDA TODO explain</p>
+<p>We chose CUDA as our platform of choice as its massive parallelism with relatively low latency makes
+it the best candidate for real time ray tracing, but there are still many interesting challenges with
+utilizing it effectively which we would like to explore. This makes the assignment more interesting
+to us than a CPU implementation, as a GPU implementation could in theory be much faster if usage was
+optimal.</p>
 
 <h3>
 <a id="schedule" class="anchor" href="#schedule" aria-hidden="true"><span class="octicon octicon-link"></span></a>Schedule</h3>
