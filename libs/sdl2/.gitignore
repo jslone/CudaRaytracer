@@ -1,0 +1,4 @@
+SDL2.spec
+include/SDL_config.h
+sdl2-config
+sdl2.pc
