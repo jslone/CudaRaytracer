@@ -12,5 +12,9 @@ add_subdirectory(libs/sdl2)
 add_subdirectory(libs/tinyobjloader)
 add_subdirectory(libs/tinyxml2)
 
+include_directories(
+	${SDL2_SOURCE_DIR}/include
+)
+
 add_subdirectory(application)
 
