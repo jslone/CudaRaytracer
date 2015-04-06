@@ -1,8 +1,8 @@
-#include "SDL2/SDL.h"
+#include "SDL.h"
 
 class Application {
 public:
 	void init();
-	void deinit();
+	void uninit();
 private:
 };
