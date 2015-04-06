@@ -38,6 +38,7 @@ The idea is that by ensuring our blocks consists of threads tracing rays through
 - Report on analysis of different optimizations
 
 ### Grade Proposal
+
 Grade | Project Status
 ------|-----------------------------------------------------------------------------------
 A+    | Feature complete raytracer (caustics/volumetric scattering/sub-surface scattering)
