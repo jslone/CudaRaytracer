@@ -2,6 +2,7 @@
 See the [github pages site](http://jslone.github.io/CudaRaytracer) for more information.
 
 # Getting Started
+
 ```
 git clone git@github.com:jslone/CudaRaytracer.git
 cd CudaRayTracer
@@ -11,6 +12,7 @@ make
 ```
 
 # Running
+
 ```
 ./build/bin/application
 ```
