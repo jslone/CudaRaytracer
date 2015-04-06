@@ -1,5 +1,5 @@
 # Adaptive Assignment for Real Time Raytracing
-See the [github pages site](jslone.github.io/CudaRaytracer) for more information.
+See the [github pages site](http://jslone.github.io/CudaRaytracer) for more information.
 
 # Getting Started
 ```
