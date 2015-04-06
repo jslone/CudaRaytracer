@@ -1,1 +1,9 @@
 safe: true
+
+markdown: kramdown
+
+redcarpet:
+	extensions: [tables]
+
+kramdown:
+	input: GFM
