@@ -12,7 +12,7 @@ add_subdirectory(libs/tinyxml2)
 
 include_directories(
 	${SDL2_SOURCE_DIR}/include
-	${CMAKE_SOURCE_DIR}/libs/glm
+	${CMAKE_SOURCE_DIR}/libs/glm/glm
 	${CMAKE_SOURCE_DIR}/libs/tinyobjloader
 	${CMAKE_SOURCE_DIR}/libs/tinyxml2
 	${CMAKE_SOURCE_DIR}
