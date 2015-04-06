@@ -4,6 +4,7 @@ title: CUDA Raytracer - Proposal
 ---
 
 # Proposal
+
 ## Summary
 We are going to implement adaptive thread-block assignment for a real-time GPU raytracer and profile its performance. We will create a BVH accelerated raytracer and implement at least two methods for optimizing thread-block assignment at runtime: hill climbing on the dimensions of blocks and spatial reassignment of rays to threads during traces. We will then profile the performance of each combination of these two methods.
 
