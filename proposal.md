@@ -1,5 +1,6 @@
 ---
 layout: page
+title: CUDA Raytracer - Proposal
 ---
 
 # Proposal
