@@ -1,12 +1,13 @@
 ---
 layout: page
-title: Overview
+title: Getting Started
 ---
 
 # Overview
 A real-time GPU raytracer created using CUDA and adaptive thread-block allocation and assignment of rays.
 
 # Getting Started
+
 ```
 git clone git@github.com:jslone/CudaRaytracer.git
 cd CudaRayTracer
@@ -16,6 +17,7 @@ make
 ```
 
 # Running
+
 ```
 ./build/bin/application
 ```
