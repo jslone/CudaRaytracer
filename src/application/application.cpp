@@ -1,16 +1,19 @@
 #include <iostream>
 #include "application.h"
 
-void Application::init() {
-	std::cout << "hi" << std::endl;
-}
+namespace acr {
 
-void Application::uninit() {
-	std::cout << "bye" << std::endl;
-}
+  Application::Application() {
+    
+  }
+
+  Application::~Application() {
+    
+  }
+
+} // namespace acr
 
 int main(int argc, char **argv) {
-	Application app;
-	app.init();
-	app.uninit();
+  acr::Application app;
+  return 0;
 }
