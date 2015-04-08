@@ -26,6 +26,8 @@ link_libraries(
   tinyxml2
 )
 
+add_compile_options(-std=c++11 -Wall -Wextra -O3)
+
 add_subdirectory(renderer)
 
 link_libraries(

@@ -25,21 +25,34 @@ namespace acr {
   }
 
   void Application::run() {
+    int32_t lagTime = 0;
     lastTick = SDL_GetTicks();
     
     while(running) {
-      int32_t startTick = lastTick;
+      int32_t startTime = SDL_GetTicks(); // lastTick;
 
       // Do stuff
       handle_events();
       
       // Sleep to avoid going over frameRate
       int32_t period = 1000 / frameRate;
-      int32_t endTick = SDL_GetTicks();
-      int32_t sleepTime = period - (endTick - startTick);
+      int32_t endTime = SDL_GetTicks();
+      int32_t deltaTime = endTime - startTime;
+      int32_t sleepTime = period - deltaTime - lagTime;
+      int32_t wakeTime = endTime + sleepTime;
+      
+      //std::cout << "deltaTime: " << endTime - lastTick << std::endl;
 
-      lastTick = endTick;
-      SDL_Delay(math::max(sleepTime,1));
+      // Update last tick so we know when this frame ended
+      lastTick = endTime;
+      
+      // Sleep until period is up
+      do {
+        SDL_Delay(math::max(sleepTime,1));
+      } while((int)(SDL_GetTicks()) < wakeTime);
+      
+      // Update lag time
+      lagTime = sleepTime > 0 ? SDL_GetTicks() - wakeTime : -sleepTime;
     }
   }
 
