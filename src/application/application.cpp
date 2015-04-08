@@ -49,10 +49,11 @@ namespace acr {
       // Sleep until period is up
       do {
         SDL_Delay(math::max(sleepTime,1));
-      } while((int)(SDL_GetTicks()) < wakeTime);
+        sleepTime = wakeTime - SDL_GetTicks();
+      } while(sleepTime > 0);
       
-      // Update lag time
-      lagTime = sleepTime > 0 ? SDL_GetTicks() - wakeTime : -sleepTime;
+      // Update lag time with how much we overslept
+      lagTime = -sleepTime;
     }
   }
 
@@ -80,7 +81,7 @@ int main(int argc, char **argv) {
   args.renderer.pos.y = 0;
   args.renderer.dim.x = 800;
   args.renderer.dim.y = 600;
-  args.frameRate = 20;
+  args.frameRate = 60;
   
   // Start the app
   acr::Application app(args);
