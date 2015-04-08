@@ -1,4 +1,8 @@
+#include "math/math.h"
 #include "renderer/renderer.h"
+
+#ifndef _APPLICATION_H_
+#define _APPLICATION_H_
 
 namespace acr {
 
@@ -10,11 +14,29 @@ namespace acr {
  * terminates.
  */
 class Application {
-public:
-  Application();
-  ~Application();
-private:
-  Renderer renderer;
+  public:
+
+    struct Args {
+      Renderer::Args renderer;
+      uint8_t frameRate;
+    };
+    
+    Application(const Args args);
+    ~Application();
+    
+    void start();
+    void quit();
+
+  private:
+    Renderer renderer;
+    bool running;
+    int32_t lastTick;
+    uint32_t frameRate;
+
+    void run();
+    void handle_events();
 };
 
 } // namespace acr
+
+#endif //_APPLICATION_H_
