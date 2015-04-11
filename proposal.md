@@ -60,7 +60,7 @@ optimal.
 - Week of April 17
     - Functional (unoptimized) raytracer
     - Hill climbing
--Week of April 24
+- Week of April 24
     - Optimized data structure
     - Dynamic ray assignment
 - Week of May 1
