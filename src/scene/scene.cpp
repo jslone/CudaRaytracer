@@ -25,6 +25,11 @@ namespace acr{
 		//Todo
 	}
 
+	inline glm::tvec3<float> getTvec3(aiVector3D aivec){
+		glm::tvec3<float> vec = glm::tvec3<float>(aivec.x, aivec.y, aivec.z);
+		return vec;
+	}
+
 	void Scene::loadScene(const aiScene* scene){
 		//scene->mCameras[]		scene->mNumCameras
 		//scene->mLights[]		scene->mNumLights
@@ -35,6 +40,15 @@ namespace acr{
 		//THINGS TO DO:
 
 		//Load camera
+		Camera c;
+		c.aspectRatio = scene->mCameras[0]->mAspect;
+		c.horizontalFOV = scene->mCameras[0]->mHorizontalFOV;
+		aiVector3D eye = scene->mCameras[0]->mPosition;
+		aiVector3D up = scene->mCameras[0]->mUp;
+		aiVector3D center = scene->mCameras[0]->mLookAt;
+		c.globalTransform = math::lookAt(getTvec3(eye), getTvec3(center), getTvec3(up));
+		camera = c;
+
 		//Load lights
 		//Load materials
 		//Load textures
@@ -60,16 +74,15 @@ namespace acr{
 		obj->parent = parent;
 		obj->localTransform = getMathMatrix(node->mTransformation);
 
-		//If has parent, get transform
+		//if has parent, get transform
 		if(parent){
 			obj->globalTransform = obj->localTransform * parent->globalTransform;
 			obj->globalInverseTransform = inverse(obj->globalTransform);
 		}
 
-		//Only one mesh
-		if(node->mNumMeshes <= 1){
+		if(node->mNumMeshes <= 1){ //Only one mesh
 			if(node->mNumMeshes > 0){
-				obj->meshIndex = node->mMeshes[0]; //Get actual mesh
+				obj->meshIndex = node->mMeshes[0];
 			}
 			else{
 				obj->meshIndex = -1;
@@ -78,25 +91,24 @@ namespace acr{
 			obj->numChildren = node->mNumChildren;
 			obj->children = new Object*[node->mNumChildren];
 
-			for(int i = 0; i < node->mNumChildren; i++){
+			for(unsigned int i = 0; i < node->mNumChildren; i++){
 				obj->children[i] = loadNode(node->mChildren[i], obj);
 			}
 		}
-		//More than one mesh
-		else{
+		else{ //More than one mesh
 			obj->meshIndex = -1;
 			obj->numChildren = node->mNumChildren + node->mNumMeshes;
 
-			for(int i = 0; i < node->mNumMeshes; i++){
+			for(unsigned int i = 0; i < node->mNumMeshes; i++){
 				Object* child = new Object;
 				child->numChildren = 0;
 				child->parent = obj;
-				child->meshIndex = node->mMeshes[i]; //Get actual mesh
+				child->meshIndex = node->mMeshes[i];
 				child->globalTransform = obj->globalTransform;
 				child->globalInverseTransform = obj->globalInverseTransform;
 			}
 
-			for(int i = 0; i < node->mNumChildren; i++){
+			for(unsigned int i = 0; i < node->mNumChildren; i++){
 				obj->children[i+node->mNumMeshes] = loadNode(node->mChildren[i], obj);
 			}
 		}

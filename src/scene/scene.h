@@ -18,6 +18,13 @@ namespace acr {
     	math::mat4 globalInverseTransform;
   };
 
+  class Camera{
+    public:
+      float aspectRatio;
+      float horizontalFOV;
+      math::mat4 globalTransform;
+  };
+
   class Scene {
     public:
       struct Args {
@@ -31,6 +38,7 @@ namespace acr {
       Object* loadNode(aiNode* node, Object* parent);
       math::mat4& getMathMatrix(aiMatrix4x4 aiMatrix);
       Object* root;
+      Camera camera;
   };
 
 } // namespace acr
