@@ -11,7 +11,11 @@ namespace acr {
 
   class Scene {
     public:
-      Scene(const aiScene& scene);
+      struct Args {
+        const char* filePath;
+      };
+
+      Scene(const Args &args);
       ~Scene();      
     private:
   };
