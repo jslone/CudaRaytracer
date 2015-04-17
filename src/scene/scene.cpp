@@ -26,8 +26,7 @@ namespace acr{
 	}
 
 	inline glm::tvec3<float> getTvec3(aiVector3D aivec){
-		glm::tvec3<float> vec = glm::tvec3<float>(aivec.x, aivec.y, aivec.z);
-		return vec;
+		return glm::tvec3<float>(aivec.x, aivec.y, aivec.z);
 	}
 
 	void Scene::loadScene(const aiScene* scene){
