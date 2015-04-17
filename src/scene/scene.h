@@ -8,7 +8,7 @@
 namespace acr {
   
   class Object {
-  	Mesh* mesh;
+  	int meshIndex;
   	Object** children;
   	int numChildren;
   	Object* parent;
