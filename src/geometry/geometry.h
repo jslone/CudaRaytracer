@@ -2,13 +2,14 @@
 #define _GEOMETRY_H_
 
 #include "math/math.h"
+#include "materials/materials.h"
 
 namespace acr {
 
   struct Vertex {
     math::vec3 position;
     math::vec3 normal;
-    math::vec3 color;
+    Color3 color;
   };
 
   struct Face {

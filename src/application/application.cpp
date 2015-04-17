@@ -5,8 +5,8 @@ namespace acr {
 
   Application::Application(const Args args)
     : renderer(args.renderer),
-      frameRate(args.frameRate),
-      scene(args.scene){
+      scene(args.scene),
+      frameRate(args.frameRate) {
     
       SDL_Init(0);
       SDL_InitSubSystem(SDL_INIT_TIMER | SDL_INIT_EVENTS);
