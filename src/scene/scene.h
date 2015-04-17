@@ -3,10 +3,18 @@
 
 #include "assimp/scene.h"
 #include "geometry/geometry.h"
+#include "math/math.h"
 
 namespace acr {
   
   class Object {
+  	Mesh* mesh;
+  	Object** children;
+  	int numChildren;
+  	Object* parent;
+  	math::mat4 globalTransform;
+  	math::mat4 localTransform;
+  	math::mat4 globalInverseTransform;
   };
 
   class Scene {
