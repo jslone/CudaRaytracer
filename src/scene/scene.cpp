@@ -20,6 +20,10 @@ namespace acr{
 		//DoTheSceneProcessing( scene);
 	}
 
+	Scene::~Scene(){
+		//Todo
+	}
+
 	void loadScene(aiScene* scene){
 		//scene->mCameras[]		scene->mNumCameras
 		//scene->mLights[]		scene->mNumLights
