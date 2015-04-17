@@ -25,19 +25,12 @@ namespace acr{
 		//Todo
 	}
 
-	void loadScene(aiScene* scene){
+	void Scene::loadScene(const aiScene* scene){
 		//scene->mCameras[]		scene->mNumCameras
 		//scene->mLights[]		scene->mNumLights
 		//scene->mMaterials[]	scene->mNumMaterials
 		//scene->mMeshes[]		scene->mNumMeshes
 		//scene->mTextures[]	scene->mNumTextures
-
-		//scene->mRootNode		root node of hierarchy
-		//scene->mRootNode.mChildren[]			scene->mRootNode.mNumChildren
-		//scene->mRootNode.mMeshes[]			scene->mRootNode.mNumMeshes
-		//scene->mRootNode.mParent				#aiNode*
-		//scene->mRootNode.mTransformation		#aiMatrix4x4
-		//scene->mRootNode.mName 				#aiString
 
 		//THINGS TO DO:
 
@@ -48,11 +41,11 @@ namespace acr{
 
 		//Load meshes
 
-		//Load hierarchies
-		loadNode(scene->mRootNode, NULL);
+		//Load object hierarchy
+		root = loadNode(scene->mRootNode, NULL);
 	}
 
-	math::mat4& getMathMatrix(aiMatrix4x4 aiMatrix){
+	math::mat4& Scene::getMathMatrix(aiMatrix4x4 aiMatrix){
 		math::mat4 mat;
 		for(int i = 0; i < 4; i++){
 			for(int j = 0; j < 4; j++){
@@ -62,7 +55,7 @@ namespace acr{
 		return mat;
 	}
 
-	Object* loadNode(aiNode* node, Object* parent){
+	Object* Scene::loadNode(aiNode* node, Object* parent){
 		Object* obj = new Object;
 		obj->parent = parent;
 		obj->localTransform = getMathMatrix(node->mTransformation);
@@ -83,7 +76,7 @@ namespace acr{
 			}
 
 			obj->numChildren = node->mNumChildren;
-			obj->children = new Object[mNumChildren];
+			obj->children = new Object*[node->mNumChildren];
 
 			for(int i = 0; i < node->mNumChildren; i++){
 				obj->children[i] = loadNode(node->mChildren[i], obj);
@@ -104,7 +97,7 @@ namespace acr{
 			}
 
 			for(int i = 0; i < node->mNumChildren; i++){
-				obj->children[i+mNumMeshes] = loadNode(node->mChildren[i], obj);
+				obj->children[i+node->mNumMeshes] = loadNode(node->mChildren[i], obj);
 			}
 		}
 

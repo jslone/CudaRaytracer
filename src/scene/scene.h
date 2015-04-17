@@ -8,13 +8,14 @@
 namespace acr {
   
   class Object {
-  	int meshIndex;
-  	Object** children;
-  	int numChildren;
-  	Object* parent;
-  	math::mat4 globalTransform;
-  	math::mat4 localTransform;
-  	math::mat4 globalInverseTransform;
+    public:
+    	int meshIndex;
+    	int numChildren;
+    	Object* parent;
+      Object** children;
+    	math::mat4 globalTransform;
+    	math::mat4 localTransform;
+    	math::mat4 globalInverseTransform;
   };
 
   class Scene {
@@ -26,6 +27,10 @@ namespace acr {
       Scene(const Args &args);
       ~Scene();      
     private:
+      void loadScene(const aiScene* scene);
+      Object* loadNode(aiNode* node, Object* parent);
+      math::mat4& getMathMatrix(aiMatrix4x4 aiMatrix);
+      Object* root;
   };
 
 } // namespace acr
