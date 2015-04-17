@@ -19,6 +19,7 @@ class Application {
     struct Args {
       Renderer::Args renderer;
       uint8_t frameRate;
+      Scene::Args scene;
     };
     
     Application(const Args args);

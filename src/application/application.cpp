@@ -5,7 +5,8 @@ namespace acr {
 
   Application::Application(const Args args)
     : renderer(args.renderer),
-      frameRate(args.frameRate) {
+      frameRate(args.frameRate),
+      scene(args.scene){
     
       SDL_Init(0);
       SDL_InitSubSystem(SDL_INIT_TIMER | SDL_INIT_EVENTS);
@@ -82,7 +83,9 @@ int main(int argc, char **argv) {
   args.renderer.dim.x = 800;
   args.renderer.dim.y = 600;
   args.frameRate = 60;
-  
+
+  args.scene.filePath = argv[0]; //!!!! Should check for argc bound
+
   // Start the app
   acr::Application app(args);
   app.start();
