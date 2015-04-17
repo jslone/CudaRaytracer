@@ -1,1 +1,1 @@
-add_library(geometry geometry.cpp)
+cuda_add_library(geometry geometry.cu)

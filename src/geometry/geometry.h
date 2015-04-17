@@ -21,12 +21,18 @@ namespace acr {
       Mesh(float *positions, float *normals, float *colors, uint32_t *indices, uint32_t numVertices, uint32_t numFaces);
       ~Mesh();
     private:
+      Mesh();
+
       Vertex   *vertices;
       Face     *faces;
       uint32_t numVertices;
       uint32_t numFaces;
 
       char *data;
+      size_t dataSize;
+      
+      Mesh *devPtr;
+      size_t devSize;
   };
   
 } // namespace acr
