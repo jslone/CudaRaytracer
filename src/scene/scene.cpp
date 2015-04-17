@@ -13,16 +13,11 @@ namespace acr{
 		        aiProcess_SortByPType);
 		  
 		// If the import failed, report it
-		if(!scene)
-		{
+		//if(!scene)
 			//To error log: importer.GetErrorString();
-			return false;
-		}
 
 		// Use the scene
 		//DoTheSceneProcessing( scene);
-
-		return true;
 	}
 
 	void loadScene(aiScene* scene){
