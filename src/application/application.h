@@ -1,8 +1,8 @@
-#include "math/math.h"
-#include "renderer/renderer.h"
-
 #ifndef _APPLICATION_H_
 #define _APPLICATION_H_
+
+#include "math/math.h"
+#include "renderer/renderer.h"
 
 namespace acr {
 

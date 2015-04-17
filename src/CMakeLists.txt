@@ -9,26 +9,31 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(libs/glm)
 add_subdirectory(libs/sdl2)
-add_subdirectory(libs/tinyobjloader)
-add_subdirectory(libs/tinyxml2)
+add_subdirectory(libs/assimp)
 
 include_directories(
   ${CMAKE_SOURCE_DIR}/libs/sdl2/include
 	${CMAKE_SOURCE_DIR}/libs/glm/glm
-	${CMAKE_SOURCE_DIR}/libs/tinyobjloader
-	${CMAKE_SOURCE_DIR}/libs/tinyxml2
+  ${CMAKE_SOURCE_DIR}/libs/assimp/include
 	${CMAKE_SOURCE_DIR}
 )
 
 link_libraries(
   SDL2
-  tinyobjloader
-  tinyxml2
+  assimp
 )
 
 add_compile_options(-std=c++11 -Wall -Wextra -O3)
 
-add_subdirectory(renderer)
+add_subdirectory(geometry)
+link_libraries(geometry)
+
+add_subdirectory(scene)
+link_libraries(scene)
+
+add_subdirectory(
+  renderer
+)
 
 link_libraries(
   renderer

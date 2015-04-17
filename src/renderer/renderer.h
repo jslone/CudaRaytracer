@@ -1,8 +1,8 @@
-#include "SDL.h"
-#include "math/math.h"
-
 #ifndef _RENDERER_H_
 #define _RENDERER_H_
+
+#include "SDL.h"
+#include "math/math.h"
 
 namespace acr {
 

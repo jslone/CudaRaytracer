@@ -4,3 +4,6 @@
 [submodule "src/libs/tinyobjloader"]
 	path = src/libs/tinyobjloader
 	url = https://github.com:syoyo/tinyobjloader.git
+[submodule "src/libs/assimp"]
+	path = src/libs/assimp
+	url = https://github.com/assimp/assimp.git
