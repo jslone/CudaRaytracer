@@ -3,6 +3,7 @@
 
 #include "math/math.h"
 #include "renderer/renderer.h"
+#include "scene/scene.h"
 
 namespace acr {
 
@@ -30,6 +31,7 @@ class Application {
 
   private:
     Renderer renderer;
+    Scene scene;
     bool running;
     int32_t lastTick;
     uint32_t frameRate;
