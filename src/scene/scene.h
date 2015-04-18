@@ -79,13 +79,16 @@ namespace acr {
       Light** loadLights(const aiScene* scene);
       Material* loadMaterials(const aiScene* scene);
       Camera loadCamera(aiCamera* cam);
+      Mesh* loadMeshes(const aiScene* scene);
       void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
       Object* rootObject;
       Camera camera;
       Light** lights;
       Material* materials;
+      Mesh* meshes;
       int numLights;
       int numMaterials;
+      int numMeshes;
   };
 
 } // namespace acr
