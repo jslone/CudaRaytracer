@@ -15,12 +15,30 @@ namespace acr {
   struct Face {
     uint32_t indices[3];
   };
+  
+  struct Ray {
+    math::vec3 o;
+    math::vec3 d;
+  };
+
+  struct HitInfo {
+    float t;
+    Vertex point;
+    uint32_t materialIndex;
+  };
+
+  class Shape {
+    public:
+      virtual bool intersect(const Ray &r, HitInfo &info) = 0;
+  };
 
 
-  class Mesh {
+  class Mesh : Shape {
     public:
       Mesh(float *positions, float *normals, float *colors, uint32_t *indices, uint32_t numVertices, uint32_t numFaces);
       ~Mesh();
+
+      virtual bool intersect(const Ray &r, HitInfo &info);
     private:
       Mesh();
 
@@ -28,6 +46,8 @@ namespace acr {
       Face     *faces;
       uint32_t numVertices;
       uint32_t numFaces;
+
+      uint32_t materialIndex;
 
       char *data;
       size_t dataSize;
