@@ -77,7 +77,7 @@ namespace acr{
 		meshes = loadMeshes(scene);
 
 		//Load object hierarchy
-		//Todo get flat list of objects as well
+		//objects 
 		rootObject = loadObject(scene->mRootNode, NULL);
 	}
 
@@ -188,21 +188,25 @@ namespace acr{
 	}
 
 	Object* Scene::loadObject(aiNode* node, Object* parent){
-		Object* obj = new Object;
+		Object* obj = &objects[numObjects];
 		obj->parent = parent;
-		getMathMatrix(node->mTransformation, obj->localTransform);
+		obj->index = numObjects++;
 
-		//if has parent, get transform
 		if(parent){
+			//has parent, so get transform
+			getMathMatrix(node->mTransformation, obj->localTransform);
 			obj->globalTransform = obj->localTransform * parent->globalTransform;
 			obj->globalInverseTransform = inverse(obj->globalTransform);
+			obj->parentIndex = parent->index;
+		}else{
+			//no parent, must be root
+			obj->parentIndex = -1;
 		}
 
 		if(node->mNumMeshes <= 1){ //Only one mesh
 			if(node->mNumMeshes > 0){
 				obj->meshIndex = node->mMeshes[0];
-			}
-			else{
+			}else{
 				obj->meshIndex = -1;
 			}
 
