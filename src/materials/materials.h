@@ -9,7 +9,7 @@ namespace acr {
 
   struct Material {
     Color3 ambient,diffuse,specular;
-    float reflectiveIndex;
+    float refractiveIndex;
   };
 
 } // namespace acr
