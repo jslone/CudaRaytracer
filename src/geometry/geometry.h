@@ -3,6 +3,7 @@
 
 #include "math/math.h"
 #include "materials/materials.h"
+#include "utils/vector.h"
 
 namespace acr {
 

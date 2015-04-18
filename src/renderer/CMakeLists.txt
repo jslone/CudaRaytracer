@@ -1,1 +1,1 @@
-add_library(renderer renderer.cpp)
+cuda_add_library(renderer renderer.cu)

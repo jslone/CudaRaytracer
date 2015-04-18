@@ -9,8 +9,10 @@
 
 namespace acr {
   
-  class Object {
+  class Object : Shape {
     public:
+      virtual bool intersect(const Ray &r, HitInfo &info);
+
     	int meshIndex;
     	int numChildren;
       int index;
@@ -20,10 +22,13 @@ namespace acr {
       Object** children;
     	math::mat4 globalTransform;
     	math::mat4 localTransform;
+      math::mat4 globalNormalTransform;
+
     	math::mat4 globalInverseTransform;
+      math::mat4 globalInverseNormalTransform;
   };
 
-  class Camera{
+  class Camera {
     public:
       float aspectRatio;
       float horizontalFOV;
@@ -70,14 +75,16 @@ namespace acr {
       }
   };
 
-  class Scene {
+  class Scene : Shape {
     public:
       struct Args {
         const char* filePath;
       };
 
       Scene(const Args &args);
-      ~Scene();  
+      ~Scene();
+
+      virtual bool intersect(const Ray& r, HitInfo &info);
     private:
       std::unordered_map<std::string, Light*> light_map;
       std::unordered_map<std::string, Camera*> camera_map;
