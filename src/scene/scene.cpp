@@ -1,5 +1,4 @@
 #include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "scene.h"
 
@@ -50,6 +49,7 @@ namespace acr{
 			arr[3*i] = col[i].r;
 			arr[3*i + 1] = col[i].g;
 			arr[3*i + 2] = col[i].b;
+			arr[3*i + 3] = col[i].a;
 		}
 	}
 
@@ -63,22 +63,25 @@ namespace acr{
 
 	void Scene::loadScene(const aiScene* scene){
 		//Load textures ??? scene->mTextures[]	scene->mNumTextures
-
+		printf("Loading scene...\n");
 		//Load camera
 		camera = loadCamera(scene->mCameras[0]); //NULL CHECK
-
+		printf("Successfully loaded camera...\n");
 		//Load lights
 		lights = loadLights(scene);
-
+		printf("Successfully loaded lights...\n");
 		//Load materials
 		materials = loadMaterials(scene);
+		printf("Successfully loaded materials...\n");
 
 		//Load meshes
-		meshes = loadMeshes(scene);
+		//meshes = loadMeshes(scene);
+		//printf("Successfully loaded meshes...\n");
 
 		//Load object hierarchy
-		//objects 
+		objects = new Object[numMeshes]; 
 		rootObject = loadObject(scene->mRootNode, NULL);
+		printf("Successfully loaded hierarchy...\n");
 	}
 
 	Mesh* Scene::loadMeshes(const aiScene* scene){
@@ -94,12 +97,18 @@ namespace acr{
 
 			float *pos = new float[3*m->mNumVertices];
 			float *norms = new float[3*m->mNumVertices];
-			float *cols = new float[3*m->mNumVertices];
+			float *cols = new float[4*m->mNumVertices];
 			uint32_t *indices = new uint32_t[3*m->mNumFaces];
 
 			aiVecToArray(m->mVertices, pos, m->mNumVertices);
 			aiVecToArray(m->mNormals, norms, m->mNumVertices);
-			aiColToArray(m->mColors[0], cols, m->mNumVertices); //NULL CHECK
+
+			if(m->mColors[0]){
+				aiColToArray(m->mColors[0], cols, m->mNumVertices);
+			}else{
+				cols = nullptr;
+			}
+
 			aiIndicesToArray(m->mFaces, indices, m->mNumFaces);
 
 			mesh = Mesh(	pos,  
@@ -108,6 +117,7 @@ namespace acr{
 							indices,
 							m->mNumVertices,
 							m->mNumFaces	);
+
 		}
 
 		return mesh_list;
@@ -148,6 +158,10 @@ namespace acr{
 		aiVector3D up = cam->mUp;
 		aiVector3D center = cam->mLookAt;
 		c.globalTransform = math::lookAt(getTvec3(eye), getTvec3(center), getTvec3(up));
+
+		std::string name = std::string(cam->mName.C_Str());
+		camera_map.insert({name, &c});
+
 		return c;
 	}
 
@@ -174,6 +188,10 @@ namespace acr{
 					break;
 			}
 
+			//Put light into hash so we can retrieve it later by name :'(
+			std::string name = std::string(currentLight->mName.C_Str());
+			light_map.insert({name, l});
+
 			l->attConstant = currentLight->mAttenuationConstant;
 			l->attLinear = currentLight->mAttenuationLinear;
 			l->attQuadratic = currentLight->mAttenuationQuadratic;
@@ -195,11 +213,29 @@ namespace acr{
 		if(parent){
 			//has parent, so get transform
 			getMathMatrix(node->mTransformation, obj->localTransform);
-			obj->globalTransform = obj->localTransform * parent->globalTransform;
+
+			obj->globalTransform = parent->globalTransform * obj->localTransform;
+
 			obj->globalInverseTransform = inverse(obj->globalTransform);
 			obj->parentIndex = parent->index;
+
+			std::string name = std::string(node->mName.C_Str());
+			std::unordered_map<std::string,Light*>::const_iterator light_got = light_map.find (name);
+			std::unordered_map<std::string,Camera*>::const_iterator cam_got = camera_map.find (name);
+
+			if(light_got != light_map.end()){
+				Light* l = light_got->second;
+				l->position = math::vec3(obj->globalTransform * math::vec4(l->position, 1.0));
+			}
+
+			if(cam_got != camera_map.end()){
+				Camera* c = cam_got->second;
+				camera.globalTransform = obj->globalTransform * c->globalTransform;
+			}
+
 		}else{
 			//no parent, must be root
+			obj->globalTransform = math::mat4();
 			obj->parentIndex = -1;
 		}
 

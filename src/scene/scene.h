@@ -4,6 +4,8 @@
 #include "assimp/scene.h"
 #include "geometry/geometry.h"
 #include "math/math.h"
+#include <unordered_map>
+#include <string>
 
 namespace acr {
   
@@ -74,8 +76,10 @@ namespace acr {
       };
 
       Scene(const Args &args);
-      ~Scene();      
+      ~Scene();  
     private:
+      std::unordered_map<std::string, Light*> light_map;
+      std::unordered_map<std::string, Camera*> camera_map;
       void loadScene(const aiScene* scene);
       Object* loadObject(aiNode* node, Object* parent);
       Light** loadLights(const aiScene* scene);
