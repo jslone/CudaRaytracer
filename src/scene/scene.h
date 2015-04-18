@@ -15,6 +15,7 @@ namespace acr {
     	int numChildren;
       int index;
       int parentIndex;
+      std::string name;
     	Object* parent;
       Object** children;
     	math::mat4 globalTransform;
@@ -88,11 +89,11 @@ namespace acr {
       Mesh* loadMeshes(const aiScene* scene);
       void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
       Object* rootObject;
-      Object* objects;
+      Object* objects;      //Make vector
       Camera camera;
-      Light** lights;
-      Material* materials;
-      Mesh* meshes;
+      Light** lights;       //Make vector
+      Material* materials;  //Make vector
+      Mesh* meshes;         //Make vector
       int numLights;
       int numMaterials;
       int numMeshes;

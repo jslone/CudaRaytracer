@@ -2,6 +2,8 @@
 #include <assimp/postprocess.h>
 #include "scene.h"
 
+//#define LOAD_VERBOSE
+
 namespace acr{
 	Scene::Scene(const Scene::Args &args){
 		Assimp::Importer importer;
@@ -66,22 +68,26 @@ namespace acr{
 		printf("Loading scene...\n");
 		//Load camera
 		camera = loadCamera(scene->mCameras[0]); //NULL CHECK
-		printf("Successfully loaded camera...\n");
+		printf("Successfully loaded 1 camera.\n");
 		//Load lights
 		lights = loadLights(scene);
-		printf("Successfully loaded lights...\n");
+		printf("Successfully loaded %d light(s).\n", numLights);
 		//Load materials
 		materials = loadMaterials(scene);
-		printf("Successfully loaded materials...\n");
+		printf("Successfully loaded %d material(s).\n", numMaterials);
 
 		//Load meshes
 		//meshes = loadMeshes(scene);
-		//printf("Successfully loaded meshes...\n");
+		//printf("Successfully loaded %d mesh(es).\n", numMeshes);
 
 		//Load object hierarchy
 		objects = new Object[numMeshes]; 
 		rootObject = loadObject(scene->mRootNode, NULL);
-		printf("Successfully loaded hierarchy...\n");
+		printf("Successfully loaded hierarchy.\n");
+
+		for(int i = 0; i < numObjects; i ++){
+			printf("Object[%d]: %s\n", i, objects[i].name.c_str());
+		}
 	}
 
 	Mesh* Scene::loadMeshes(const aiScene* scene){
@@ -94,6 +100,9 @@ namespace acr{
 
 			Mesh &mesh = mesh_list[i];
 			aiMesh* m = scene->mMeshes[i];
+
+			// Todo: 	instead of creating new memory for all this, simply
+			//			recast pointers.
 
 			float *pos = new float[3*m->mNumVertices];
 			float *norms = new float[3*m->mNumVertices];
@@ -111,6 +120,7 @@ namespace acr{
 
 			aiIndicesToArray(m->mFaces, indices, m->mNumFaces);
 
+			//Destructing (and hence freeing stuff that doesn't actually exist)
 			mesh = Mesh(	pos,  
 							norms,    
 							cols,
@@ -147,6 +157,14 @@ namespace acr{
 			mat.ambient = getColor3(ambient);
 			mat.specular = getColor3(specular);
 			m->Get(AI_MATKEY_REFRACTI, mat.refractiveIndex);
+
+			#ifdef LOAD_VERBOSE
+			printf("\n");
+			printf("Material[%d]:\n", i);
+			printf("-->Diffuse[%f %f %f]\n", mat.diffuse.x, mat.diffuse.y, mat.diffuse.z);
+			printf("-->Ambient[%f %f %f]\n", mat.ambient.x, mat.ambient.y, mat.ambient.z);
+			printf("-->Specular[%f %f %f]\n", mat.specular.x, mat.specular.y, mat.specular.z);
+			#endif
 		}
 	}
 
@@ -215,13 +233,12 @@ namespace acr{
 			getMathMatrix(node->mTransformation, obj->localTransform);
 
 			obj->globalTransform = parent->globalTransform * obj->localTransform;
-
 			obj->globalInverseTransform = inverse(obj->globalTransform);
 			obj->parentIndex = parent->index;
+			obj->name = std::string(node->mName.C_Str());;
 
-			std::string name = std::string(node->mName.C_Str());
-			std::unordered_map<std::string,Light*>::const_iterator light_got = light_map.find (name);
-			std::unordered_map<std::string,Camera*>::const_iterator cam_got = camera_map.find (name);
+			std::unordered_map<std::string,Light*>::const_iterator light_got = light_map.find (obj->name);
+			std::unordered_map<std::string,Camera*>::const_iterator cam_got = camera_map.find (obj->name);
 
 			if(light_got != light_map.end()){
 				Light* l = light_got->second;
@@ -231,6 +248,15 @@ namespace acr{
 			if(cam_got != camera_map.end()){
 				Camera* c = cam_got->second;
 				camera.globalTransform = obj->globalTransform * c->globalTransform;
+
+				#ifdef LOAD_VERBOSE
+				printf("\n");
+				printf("Camera:\n");
+				math::vec3 pos = math::vec3(camera.globalTransform * math::vec4(0,0,0,1));
+				printf("-->Position[%f %f %f]\n", pos.x, pos.y, pos.z);
+				printf("-->Aspect Ratio[%f]\n", camera.aspectRatio);
+				printf("-->HorizontalFOV[%f]\n", camera.horizontalFOV);
+				#endif
 			}
 
 		}else{
