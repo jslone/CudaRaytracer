@@ -7,10 +7,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-find_package(CUDA QUIET REQUIRED)
-
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}-O3 -gencode arch=compute_20,code=sm_20)
-
 add_subdirectory(libs/glm)
 add_subdirectory(libs/sdl2)
 add_subdirectory(libs/assimp)
@@ -27,7 +23,13 @@ link_libraries(
   assimp
 )
 
-add_compile_options(-std=c++11 -Wall -Wextra -O3)
+set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++11 -stdlib=libc++ -Wall -Wextra -O3")
+
+find_package(CUDA QUIET REQUIRED)
+
+set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-O3 -gencode arch=compute_20,code=sm_20")
 
 add_subdirectory(geometry)
 link_libraries(geometry)

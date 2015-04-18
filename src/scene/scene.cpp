@@ -114,4 +114,26 @@ namespace acr{
 
 		return obj;
 	}
+
+  bool Scene::intersect(const Ray &r, HitInfo &info) {
+    bool intersected = false;
+    for(int i = 0; i < numObjects; i++) {
+      intersected = objects[i].intersect(r,info);
+    }
+    return intersected;
+  }
+
+  bool Object::intersect(const Ray &r, HitInfo &info) {
+    Ray lr;
+    lr.o = math::vec3(globalInverseTransform * math::vec4(r.o,1.0));
+    lr.d = math::vec3(globalInverseNormalTransform * math::vec4(r.d,1.0));
+    
+    // mesh intersection
+    if(false) {
+      info.point.position = math::vec3(globalTransform * math::vec4(info.point.position,1.0));
+      info.point.normal = math::vec3(globalNormalTransform * math::vec4(info.point.normal,1.0));
+      return true;
+    }
+    return false;
+  }
 }

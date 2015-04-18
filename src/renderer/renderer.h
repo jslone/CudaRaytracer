@@ -3,6 +3,7 @@
 
 #include "SDL.h"
 #include "math/math.h"
+#include "scene/scene.h"
 
 namespace acr {
 
@@ -16,6 +17,9 @@ namespace acr {
 
       Renderer(const Args &args);
       ~Renderer();
+
+      void loadScene(const Scene &scene);
+      void render();
     private:
       SDL_Window *window;
       SDL_Renderer *renderer;

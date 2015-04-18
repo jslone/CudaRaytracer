@@ -2,7 +2,6 @@
 #include "renderer.h"
 
 namespace acr {
-
   Renderer::Renderer(const Renderer::Args &args) {
     if(SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) {
       std::cerr << "SDL_InitSubSystem Error: " << SDL_GetError() << std::endl;
@@ -31,6 +30,25 @@ namespace acr {
     if(window) {
       SDL_DestroyWindow(window);
     }
+  }
+
+  __constant__ Scene gScene;
+  
+  void Renderer::loadScene(const Scene &scene) {
+    // load scene onto gpu
+  }
+
+  __kernel__
+  void Render::scatterTrace() {
+    int x = blockIdx.x * gridDim.x + threadIdx.x;
+    int y = blockIdx.y * gridDim.y + threadIdx.y;
+    int sample = blockIdx.z * gridDim.z + threadIdx.z;
+
+    
+  }
+
+  void Renderer::render() {
+    // call kernel to render pixels then draw to screen
   }
 
 }
