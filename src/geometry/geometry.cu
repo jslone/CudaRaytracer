@@ -20,7 +20,8 @@ namespace acr {
       for(uint32_t j = 0; j < 3; j++) {
         vertices[i].position[j] = positions[3*i+j];
         vertices[i].normal[j] = normals[3*i+j];
-        vertices[i].color[j] = colors[4*i+j];
+        if(colors)
+          vertices[i].color[j] = colors[4*i+j];
       }
     }
 

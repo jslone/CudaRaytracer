@@ -83,9 +83,7 @@ int main(int argc, char **argv) {
   args.renderer.dim.x = 800;
   args.renderer.dim.y = 600;
   args.frameRate = 60;
-
-  args.scene.filePath = argv[0]; //!!!! Should check for argc bound
-
+  args.scene.filePath = argv[1]; //!!!! Should check for argc bound
   // Start the app
   acr::Application app(args);
   app.start();

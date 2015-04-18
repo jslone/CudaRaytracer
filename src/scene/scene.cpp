@@ -1,5 +1,4 @@
 #include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "scene.h"
 
@@ -25,65 +24,225 @@ namespace acr{
 		//Todo
 	}
 
+	inline Color3 getColor3(aiColor3D aicol){
+		return Color3(aicol.r, aicol.g, aicol.b);
+	}
+
+	inline math::vec3 getVec3(aiVector3D aivec){
+		return math::vec3(aivec.x, aivec.y, aivec.z);
+	}
+
 	inline glm::tvec3<float> getTvec3(aiVector3D aivec){
 		return glm::tvec3<float>(aivec.x, aivec.y, aivec.z);
 	}
 
-	void Scene::loadScene(const aiScene* scene){
-		//scene->mCameras[]		scene->mNumCameras
-		//scene->mLights[]		scene->mNumLights
-		//scene->mMaterials[]	scene->mNumMaterials
-		//scene->mMeshes[]		scene->mNumMeshes
-		//scene->mTextures[]	scene->mNumTextures
-
-		//THINGS TO DO:
-
-		//Load camera
-		Camera c;
-		c.aspectRatio = scene->mCameras[0]->mAspect;
-		c.horizontalFOV = scene->mCameras[0]->mHorizontalFOV;
-		aiVector3D eye = scene->mCameras[0]->mPosition;
-		aiVector3D up = scene->mCameras[0]->mUp;
-		aiVector3D center = scene->mCameras[0]->mLookAt;
-		c.globalTransform = math::lookAt(getTvec3(eye), getTvec3(center), getTvec3(up));
-		camera = c;
-
-		//Load lights
-		//Load materials
-		//Load textures
-
-		//Load meshes
-
-		//Load object hierarchy
-		root = loadNode(scene->mRootNode, NULL);
+	inline void aiVecToArray(aiVector3D* vec, float* arr, int size){
+		for(int i = 0; i < size; i++){
+			arr[3*i] = vec[i].x;
+			arr[3*i + 1] = vec[i].y;
+			arr[3*i + 2] = vec[i].z;
+		}
 	}
 
-	math::mat4& Scene::getMathMatrix(aiMatrix4x4 aiMatrix){
-		math::mat4 mat;
-		for(int i = 0; i < 4; i++){
-			for(int j = 0; j < 4; j++){
-				mat[i][j] = aiMatrix[j][i];
+	inline void aiColToArray(aiColor4D* col, float* arr, int size){
+		for(int i = 0; i < size; i++){
+			arr[3*i] = col[i].r;
+			arr[3*i + 1] = col[i].g;
+			arr[3*i + 2] = col[i].b;
+			arr[3*i + 3] = col[i].a;
+		}
+	}
+
+	inline void aiIndicesToArray(aiFace* faces, uint32_t* arr, int size){
+		for(int i = 0; i < size; i++){
+			for(int j = 0; j < 3; j++){
+				arr[3*i + j] = faces[i].mIndices[j];
 			}
 		}
-		return mat;
 	}
 
-	Object* Scene::loadNode(aiNode* node, Object* parent){
-		Object* obj = new Object;
-		obj->parent = parent;
-		obj->localTransform = getMathMatrix(node->mTransformation);
+	void Scene::loadScene(const aiScene* scene){
+		//Load textures ??? scene->mTextures[]	scene->mNumTextures
+		printf("Loading scene...\n");
+		//Load camera
+		camera = loadCamera(scene->mCameras[0]); //NULL CHECK
+		printf("Successfully loaded camera...\n");
+		//Load lights
+		lights = loadLights(scene);
+		printf("Successfully loaded lights...\n");
+		//Load materials
+		materials = loadMaterials(scene);
+		printf("Successfully loaded materials...\n");
 
-		//if has parent, get transform
+		//Load meshes
+		//meshes = loadMeshes(scene);
+		//printf("Successfully loaded meshes...\n");
+
+		//Load object hierarchy
+		objects = new Object[numMeshes]; 
+		rootObject = loadObject(scene->mRootNode, NULL);
+		printf("Successfully loaded hierarchy...\n");
+	}
+
+	Mesh* Scene::loadMeshes(const aiScene* scene){
+		numMeshes = scene->mNumMeshes;
+		Mesh* mesh_list = new Mesh[numMeshes];
+
+		for(int i = 0; i < numMeshes; i++){
+			//Check for null colors FIX THIS
+			//Assuming mNumIndices == 3
+
+			Mesh &mesh = mesh_list[i];
+			aiMesh* m = scene->mMeshes[i];
+
+			float *pos = new float[3*m->mNumVertices];
+			float *norms = new float[3*m->mNumVertices];
+			float *cols = new float[4*m->mNumVertices];
+			uint32_t *indices = new uint32_t[3*m->mNumFaces];
+
+			aiVecToArray(m->mVertices, pos, m->mNumVertices);
+			aiVecToArray(m->mNormals, norms, m->mNumVertices);
+
+			if(m->mColors[0]){
+				aiColToArray(m->mColors[0], cols, m->mNumVertices);
+			}else{
+				cols = nullptr;
+			}
+
+			aiIndicesToArray(m->mFaces, indices, m->mNumFaces);
+
+			mesh = Mesh(	pos,  
+							norms,    
+							cols,
+							indices,
+							m->mNumVertices,
+							m->mNumFaces	);
+
+		}
+
+		return mesh_list;
+	}
+
+	void Scene::getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat){
+		for(int i = 0; i < 4; i++){
+			for(int j = 0; j < 4; j++){
+				mathMat[i][j] = aiMatrix[j][i];
+			}
+		}
+	}
+
+	Material* Scene::loadMaterials(const aiScene* scene){
+		numMaterials = scene->mNumMaterials;
+		Material* mats = new Material[numMaterials];
+
+		for(int i = 0; i < numMaterials; i++){
+			Material &mat = mats[i];
+			aiMaterial* m = scene->mMaterials[i];
+
+			aiColor3D diffuse, ambient, specular;
+			m->Get(AI_MATKEY_COLOR_DIFFUSE,diffuse);
+			m->Get(AI_MATKEY_COLOR_AMBIENT,ambient);
+			m->Get(AI_MATKEY_COLOR_SPECULAR,specular);
+			mat.diffuse = getColor3(diffuse);
+			mat.ambient = getColor3(ambient);
+			mat.specular = getColor3(specular);
+			m->Get(AI_MATKEY_REFRACTI, mat.refractiveIndex);
+		}
+	}
+
+	Camera Scene::loadCamera(aiCamera* cam){
+		Camera c;
+		c.aspectRatio = cam->mAspect;
+		c.horizontalFOV = cam->mHorizontalFOV;
+		aiVector3D eye = cam->mPosition;
+		aiVector3D up = cam->mUp;
+		aiVector3D center = cam->mLookAt;
+		c.globalTransform = math::lookAt(getTvec3(eye), getTvec3(center), getTvec3(up));
+
+		std::string name = std::string(cam->mName.C_Str());
+		camera_map.insert({name, &c});
+
+		return c;
+	}
+
+	Light** Scene::loadLights(const aiScene* scene){
+		numLights = scene->mNumLights;
+		Light** ls = new Light*[numLights];
+		for(int i = 0; i < numLights; i++){
+			aiLight* currentLight = scene->mLights[i];
+			Light* l;
+
+			switch(currentLight->mType){
+				case aiLightSource_DIRECTIONAL:
+					l = (Light*)new DirectionalLight;
+					((DirectionalLight*)l)->direction = getVec3(currentLight->mDirection);
+					break;
+				case aiLightSource_SPOT:
+					l = (Light*)new SpotLight;
+					((SpotLight*)l)->direction = getVec3(currentLight->mDirection);
+					((SpotLight*)l)->innerConeAngle = currentLight->mAngleInnerCone;
+					((SpotLight*)l)->outerConeAngle = currentLight->mAngleOuterCone;
+					break;
+				default:
+					l = (Light*)new PointLight;
+					break;
+			}
+
+			//Put light into hash so we can retrieve it later by name :'(
+			std::string name = std::string(currentLight->mName.C_Str());
+			light_map.insert({name, l});
+
+			l->attConstant = currentLight->mAttenuationConstant;
+			l->attLinear = currentLight->mAttenuationLinear;
+			l->attQuadratic = currentLight->mAttenuationQuadratic;
+			l->ambient = getColor3(currentLight->mColorAmbient);
+			l->diffuse = getColor3(currentLight->mColorDiffuse);
+			l->specular = getColor3(currentLight->mColorSpecular);
+			l->position = getVec3(currentLight->mPosition);
+
+			ls[i] = l;
+		}
+		return ls;
+	}
+
+	Object* Scene::loadObject(aiNode* node, Object* parent){
+		Object* obj = &objects[numObjects];
+		obj->parent = parent;
+		obj->index = numObjects++;
+
 		if(parent){
-			obj->globalTransform = obj->localTransform * parent->globalTransform;
+			//has parent, so get transform
+			getMathMatrix(node->mTransformation, obj->localTransform);
+
+			obj->globalTransform = parent->globalTransform * obj->localTransform;
+
 			obj->globalInverseTransform = inverse(obj->globalTransform);
+			obj->parentIndex = parent->index;
+
+			std::string name = std::string(node->mName.C_Str());
+			std::unordered_map<std::string,Light*>::const_iterator light_got = light_map.find (name);
+			std::unordered_map<std::string,Camera*>::const_iterator cam_got = camera_map.find (name);
+
+			if(light_got != light_map.end()){
+				Light* l = light_got->second;
+				l->position = math::vec3(obj->globalTransform * math::vec4(l->position, 1.0));
+			}
+
+			if(cam_got != camera_map.end()){
+				Camera* c = cam_got->second;
+				camera.globalTransform = obj->globalTransform * c->globalTransform;
+			}
+
+		}else{
+			//no parent, must be root
+			obj->globalTransform = math::mat4();
+			obj->parentIndex = -1;
 		}
 
 		if(node->mNumMeshes <= 1){ //Only one mesh
 			if(node->mNumMeshes > 0){
 				obj->meshIndex = node->mMeshes[0];
-			}
-			else{
+			}else{
 				obj->meshIndex = -1;
 			}
 
@@ -91,7 +250,7 @@ namespace acr{
 			obj->children = new Object*[node->mNumChildren];
 
 			for(unsigned int i = 0; i < node->mNumChildren; i++){
-				obj->children[i] = loadNode(node->mChildren[i], obj);
+				obj->children[i] = loadObject(node->mChildren[i], obj);
 			}
 		}
 		else{ //More than one mesh
@@ -108,7 +267,7 @@ namespace acr{
 			}
 
 			for(unsigned int i = 0; i < node->mNumChildren; i++){
-				obj->children[i+node->mNumMeshes] = loadNode(node->mChildren[i], obj);
+				obj->children[i+node->mNumMeshes] = loadObject(node->mChildren[i], obj);
 			}
 		}
 
