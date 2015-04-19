@@ -7,25 +7,14 @@
 
 namespace acr
 {
-	Scene::Scene(const aiScene *scene)
-		: mesh(scene->mMeshes, scene->mMeshes + scene->numMeshes)
-	{
-	}
-
 	Scene::Scene(const Scene::Args &args)
-		: importer()
-		, scene(importer.ReadFile(args.filePath,
-															aiProcess_Triangulate
-														| aiProcess_JoinIdenticalVertices
-														| aiProcess_SortByPType))
-		, Scene(scene)
 	{
 		Assimp::Importer importer;
 
 		const aiScene* scene = importer.ReadFile(args.filePath,
-																							aiProcess_Triangulate
-																						|	aiProcess_JoinIdenticalVertices
-																						|	aiProcess_SortByPType);
+		                                         aiProcess_Triangulate
+		                                       | aiProcess_JoinIdenticalVertices
+		                                       | aiProcess_SortByPType);
 
 		// If the import failed, report it
 		//if(!scene)
@@ -44,53 +33,6 @@ namespace acr
 	Scene::~Scene()
 	{
 		//Todo
-	}
-
-	inline Color3 getColor3(aiColor3D aicol)
-	{
-		return Color3(aicol.r, aicol.g, aicol.b);
-	}
-
-	inline math::vec3 getVec3(aiVector3D aivec)
-	{
-		return math::vec3(aivec.x, aivec.y, aivec.z);
-	}
-
-	inline glm::tvec3<float> getTvec3(aiVector3D aivec)
-	{
-		return glm::tvec3<float>(aivec.x, aivec.y, aivec.z);
-	}
-
-	inline void aiVecToArray(aiVector3D* vec, float* arr, int size)
-	{
-		for (int i = 0; i < size; i++)
-		{
-			arr[3 * i] = vec[i].x;
-			arr[3 * i + 1] = vec[i].y;
-			arr[3 * i + 2] = vec[i].z;
-		}
-	}
-
-	inline void aiColToArray(aiColor4D* col, float* arr, int size)
-	{
-		for (int i = 0; i < size; i++)
-		{
-			arr[3 * i] = col[i].r;
-			arr[3 * i + 1] = col[i].g;
-			arr[3 * i + 2] = col[i].b;
-			arr[3 * i + 3] = col[i].a;
-		}
-	}
-
-	inline void aiIndicesToArray(aiFace* faces, uint32_t* arr, int size)
-	{
-		for (int i = 0; i < size; i++)
-		{
-			for (int j = 0; j < 3; j++)
-			{
-				arr[3 * i + j] = faces[i].mIndices[j];
-			}
-		}
 	}
 
 	void Scene::loadScene(const aiScene* scene)
@@ -124,6 +66,7 @@ namespace acr
 
 	Mesh* Scene::loadMeshes(const aiScene* scene)
 	{
+		meshes = vector<Mesh>(scene->mMeshes, scene->mMeshes + scene->mNumMeshes);
 	}
 
 	void Scene::getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat)

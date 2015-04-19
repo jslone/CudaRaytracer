@@ -93,6 +93,7 @@ namespace acr
 			const char* filePath;
 		};
 
+		Scene(const aiScene *scene);
 		Scene(const Args &args);
 		~Scene();
 
@@ -105,17 +106,13 @@ namespace acr
 		Camera loadCamera(aiCamera* cam);
 		Mesh* loadMeshes(const aiScene* scene);
 		void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
-		
-		Assimp::Importer Importer;
-		const aiScene *scene;
-
 
 		std::unordered_map<std::string, Light*> light_map;
 		std::unordered_map<std::string, Camera*> camera_map;
 
 		vector<Object>		objects;
 		vector<Material>	materials;
-		vector<Meshes>		meshes;
+		vector<Mesh>		meshes;
 		
 		int rootObject;
 		Camera camera;
