@@ -20,8 +20,8 @@ namespace acr
 		int index;
 		int parentIndex;
 		std::string name;
-		Object* parent;
-		Object** children;
+		int parent;
+		vector<int> children;
 		math::mat4 globalTransform;
 		math::mat4 localTransform;
 		math::mat4 globalNormalTransform;
@@ -98,8 +98,6 @@ namespace acr
 
 		virtual bool intersect(const Ray& r, HitInfo &info);
 	private:
-		std::unordered_map<std::string, Light*> light_map;
-		std::unordered_map<std::string, Camera*> camera_map;
 		void loadScene(const aiScene* scene);
 		Object* loadObject(aiNode* node, Object* parent);
 		Light** loadLights(const aiScene* scene);
@@ -107,16 +105,22 @@ namespace acr
 		Camera loadCamera(aiCamera* cam);
 		Mesh* loadMeshes(const aiScene* scene);
 		void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
-		Object* rootObject;
-		Object* objects;      //Vector<Object> objects;
+		
+		Assimp::Importer Importer;
+		const aiScene *scene;
+
+
+		std::unordered_map<std::string, Light*> light_map;
+		std::unordered_map<std::string, Camera*> camera_map;
+
+		vector<Object>		objects;
+		vector<Material>	materials;
+		vector<Meshes>		meshes;
+		
+		int rootObject;
 		Camera camera;
+	
 		Light** lights;       //Make vector?
-		Material* materials;  //Vector<Material> materials;
-		Mesh* meshes;         //Vector<Mesh> meshes;
-		int numLights;
-		int numMaterials;
-		int numMeshes;
-		int numObjects;
 	};
 
 } // namespace acr

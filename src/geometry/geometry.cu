@@ -6,6 +6,27 @@ namespace acr
 {
 	Mesh::Mesh() {}
 
+	Mesh::Mesh(const aiMesh &aiMesh)
+	{
+		for (uint32_t i = 0; i < aiMesh.numVertices; i++)
+		{
+			for (uint32_t j = 0; j < 3; j++)
+			{
+				vertices[i].position[j] = aiMesh.mVertices[i][j];
+				vertices[i].normal[j] = aiMesh.mNormals[i][j];
+				vertices[i].color[j] = aiMesh.mColors[0] ? aiMesh.mColors[0][j] : 1.0f;
+			}
+		}
+
+		for (uint32_t i = 0; i < aiMesh.numFaces; i++)
+		{
+			for (uint32_t j = 0; j < 3; j++)
+			{
+				faces[i].indices[j] = aiMesh.mFaces[i].indices[j];
+			}
+		}
+	}
+
 	Mesh::Mesh(float *positions, float *normals, float *colors, uint32_t *indices, uint32_t numVertices, uint32_t numFaces)
 		: vertices(numVertices)
 		, faces(numFaces)

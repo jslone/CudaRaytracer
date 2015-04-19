@@ -1,5 +1,5 @@
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
+#include "assimp/Importer.hpp"
+#include "assimp/postprocess.h"
 #include "scene.h"
 #include "utils/vector.h"
 
@@ -7,14 +7,25 @@
 
 namespace acr
 {
+	Scene::Scene(const aiScene *scene)
+		: mesh(scene->mMeshes, scene->mMeshes + scene->numMeshes)
+	{
+	}
+
 	Scene::Scene(const Scene::Args &args)
+		: importer()
+		, scene(importer.ReadFile(args.filePath,
+															aiProcess_Triangulate
+														| aiProcess_JoinIdenticalVertices
+														| aiProcess_SortByPType))
+		, Scene(scene)
 	{
 		Assimp::Importer importer;
 
 		const aiScene* scene = importer.ReadFile(args.filePath,
-												 aiProcess_Triangulate |
-												 aiProcess_JoinIdenticalVertices |
-												 aiProcess_SortByPType);
+																							aiProcess_Triangulate
+																						|	aiProcess_JoinIdenticalVertices
+																						|	aiProcess_SortByPType);
 
 		// If the import failed, report it
 		//if(!scene)
@@ -87,13 +98,13 @@ namespace acr
 		//Load textures ??? scene->mTextures[]	scene->mNumTextures
 		printf("Loading scene...\n");
 		//Load camera
-		camera = loadCamera(scene->mCameras[0]); //NULL CHECK
+		loadCamera(scene->mCameras[0]); //NULL CHECK
 		printf("Successfully loaded 1 camera.\n");
 		//Load lights
-		lights = loadLights(scene);
+		loadLights(scene);
 		printf("Successfully loaded %d light(s).\n", numLights);
 		//Load materials
-		materials = loadMaterials(scene);
+		loadMaterials(scene);
 		printf("Successfully loaded %d material(s).\n", numMaterials);
 
 		//Load meshes
@@ -113,50 +124,6 @@ namespace acr
 
 	Mesh* Scene::loadMeshes(const aiScene* scene)
 	{
-		numMeshes = scene->mNumMeshes;
-		Mesh* mesh_list = new Mesh[numMeshes];
-
-		for (int i = 0; i < numMeshes; i++)
-		{
-			//Check for null colors FIX THIS
-			//Assuming mNumIndices == 3
-
-			Mesh &mesh = mesh_list[i];
-			aiMesh* m = scene->mMeshes[i];
-
-			// Todo: 	instead of creating new memory for all this, simply
-			//			recast pointers.
-
-			float *pos = new float[3 * m->mNumVertices];
-			float *norms = new float[3 * m->mNumVertices];
-			float *cols = new float[4 * m->mNumVertices];
-			uint32_t *indices = new uint32_t[3 * m->mNumFaces];
-
-			aiVecToArray(m->mVertices, pos, m->mNumVertices);
-			aiVecToArray(m->mNormals, norms, m->mNumVertices);
-
-			if (m->mColors[0])
-			{
-				aiColToArray(m->mColors[0], cols, m->mNumVertices);
-			}
-			else
-			{
-				cols = nullptr;
-			}
-
-			aiIndicesToArray(m->mFaces, indices, m->mNumFaces);
-
-			//Destructing (and hence freeing stuff that doesn't actually exist)
-			mesh = Mesh(pos,
-						norms,
-						cols,
-						indices,
-						m->mNumVertices,
-						m->mNumFaces);
-
-		}
-
-		return mesh_list;
 	}
 
 	void Scene::getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat)
