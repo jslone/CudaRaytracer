@@ -126,6 +126,13 @@ namespace acr{
 
 			aiIndicesToArray(m->mFaces, indices, m->mNumFaces);
 
+			/* Alternatively
+			float *pos = (float*)m->mVertices;
+			float *norms = (float*)m->mNormals;
+			float *cols = (float*)m->mColors;
+			//Still have to do indices the slow way
+			*/
+
 			//Destructing (and hence freeing stuff that doesn't actually exist)
 			mesh = Mesh(	pos,  
 							norms,    
