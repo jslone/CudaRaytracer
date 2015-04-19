@@ -23,9 +23,9 @@ namespace acr
 	template<typename T>
 	void vector<T>::flushToDevice()
 	{
-		d = this;
+		d = *this;
 		devPtr = thrust::raw_pointer_cast(d.data());
-		length = size();
+		length = this->size();
 	}
 } // namespace acr
 
