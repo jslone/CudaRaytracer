@@ -41,19 +41,12 @@ namespace acr {
       ~Mesh();
 
       virtual bool intersect(const Ray &r, HitInfo &info);
+      void flushToDevice();
     private:
-      Vertex   *vertices;
-      Face     *faces;
-      uint32_t numVertices;
-      uint32_t numFaces;
-
-      uint32_t materialIndex;
-
-      char *data;
-      size_t dataSize;
+      vector<Vertex>  vertices;
+      vector<Face>    faces;
       
-      Mesh *devPtr;
-      size_t devSize;
+      uint32_t materialIndex;
   };
   
 } // namespace acr

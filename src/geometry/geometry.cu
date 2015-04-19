@@ -6,22 +6,13 @@ namespace acr {
   Mesh::Mesh() {}
   
   Mesh::Mesh(float *positions, float *normals, float *colors, uint32_t *indices, uint32_t numVertices, uint32_t numFaces)
-    : numVertices(numVertices), numFaces(numFaces) {
+    : vertices(numVertices), faces(numFaces) {
     
-    // Allocate on host
-    dataSize = numVertices * sizeof(Vertex) + numFaces * sizeof(Face);
-
-    data = (char*)std::malloc(dataSize);
-    
-    vertices = (Vertex*)data;
-    faces = (Face*)(vertices + numVertices);
-
     for(uint32_t i = 0; i < numVertices; i++) {
       for(uint32_t j = 0; j < 3; j++) {
         vertices[i].position[j] = positions[3*i+j];
         vertices[i].normal[j] = normals[3*i+j];
-        if(colors)
-          vertices[i].color[j] = colors[4*i+j];
+        vertices[i].color[j] = colors ? colors[4*i+j] : 1.0f;
       }
     }
 
@@ -30,23 +21,6 @@ namespace acr {
         faces[i].indices[j] = indices[3*i+j];
       }
     }
-
-    // Allocate on device
-    devSize = sizeof(Mesh) + dataSize;
-    cudaMalloc(&devPtr,devSize);
-
-    Mesh devMesh = *this;
-    devMesh.data = (char*)(devPtr + 1);
-    devMesh.vertices = (Vertex*)devMesh.data;
-    devMesh.faces = (Face*)(devMesh.vertices + numVertices);
-    
-    cudaMemcpy(devPtr, &devMesh, sizeof(Mesh), cudaMemcpyHostToDevice);
-    cudaMemcpy(devMesh.data, data, dataSize, cudaMemcpyHostToDevice);
-  }
-
-  Mesh::~Mesh() {
-    std::free(data);
-    cudaFree(devPtr);
   }
   
   bool Mesh::intersect(const Ray &r, HitInfo &info) {
@@ -78,6 +52,11 @@ namespace acr {
       }
     }
     return intersected;
+  }
+
+  void Mesh::flushToDevice() {
+    vertices.flushToDevice();
+    faces.flushToDevice();
   }
 
 } // namespace acr
