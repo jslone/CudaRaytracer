@@ -204,6 +204,8 @@ namespace acr
 			printf("-->Specular[%f %f %f]\n", mat.specular.x, mat.specular.y, mat.specular.z);
 #endif
 		}
+
+		return mats;
 	}
 
 	Camera Scene::loadCamera(aiCamera* cam)
