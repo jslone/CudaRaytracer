@@ -1,6 +1,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include "scene.h"
+#include "utils/vector.h"
 
 //#define LOAD_VERBOSE
 
@@ -12,7 +13,7 @@ namespace acr{
 		        aiProcess_Triangulate            |
 		        aiProcess_JoinIdenticalVertices  |
 		        aiProcess_SortByPType);
-		  
+		
 		// If the import failed, report it
 		//if(!scene)
 			//To error log: importer.GetErrorString();
@@ -20,6 +21,11 @@ namespace acr{
 		// Use the scene
 		//DoTheSceneProcessing( scene);
 		loadScene(scene);
+
+		//Flush scene
+		//objects.flushToDevice();
+		//materials.flushToDevice();
+		//meshes.flushToDevice();
 	}
 
 	Scene::~Scene(){

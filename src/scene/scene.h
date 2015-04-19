@@ -96,11 +96,11 @@ namespace acr {
       Mesh* loadMeshes(const aiScene* scene);
       void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
       Object* rootObject;
-      Object* objects;      //Make vector
+      Object* objects;      //Vector<Object> objects;
       Camera camera;
-      Light** lights;       //Make vector
-      Material* materials;  //Make vector
-      Mesh* meshes;         //Make vector
+      Light** lights;       //Make vector?
+      Material* materials;  //Vector<Material> materials;
+      Mesh* meshes;         //Vector<Mesh> meshes;
       int numLights;
       int numMaterials;
       int numMeshes;
