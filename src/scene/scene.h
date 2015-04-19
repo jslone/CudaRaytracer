@@ -7,105 +7,117 @@
 #include <unordered_map>
 #include <string>
 
-namespace acr {
-  
-  class Object : Shape {
-    public:
-      virtual bool intersect(const Ray &r, HitInfo &info);
+namespace acr
+{
 
-    	int meshIndex;
-    	int numChildren;
-      int index;
-      int parentIndex;
-      std::string name;
-    	Object* parent;
-      Object** children;
-    	math::mat4 globalTransform;
-    	math::mat4 localTransform;
-      math::mat4 globalNormalTransform;
+	class Object : Shape
+	{
+	public:
+		virtual bool intersect(const Ray &r, HitInfo &info);
 
-    	math::mat4 globalInverseTransform;
-      math::mat4 globalInverseNormalTransform;
-  };
+		int meshIndex;
+		int numChildren;
+		int index;
+		int parentIndex;
+		std::string name;
+		Object* parent;
+		Object** children;
+		math::mat4 globalTransform;
+		math::mat4 localTransform;
+		math::mat4 globalNormalTransform;
 
-  class Camera {
-    public:
-      float aspectRatio;
-      float horizontalFOV;
-      math::mat4 globalTransform;
-  };
+		math::mat4 globalInverseTransform;
+		math::mat4 globalInverseNormalTransform;
+	};
 
-  class Light{
-    public:
-      float attConstant;
-      float attLinear;
-      float attQuadratic;
-      Color3 ambient;
-      Color3 diffuse;
-      Color3 specular;
-      math::vec3 position;
+	class Camera
+	{
+	public:
+		float aspectRatio;
+		float horizontalFOV;
+		math::mat4 globalTransform;
+	};
 
-      virtual float getFlux(math::vec3 position) = 0;
-  };
+	class Light
+	{
+	public:
+		float attConstant;
+		float attLinear;
+		float attQuadratic;
+		Color3 ambient;
+		Color3 diffuse;
+		Color3 specular;
+		math::vec3 position;
 
-  class DirectionalLight : public Light{
-    public:
-      math::vec3 direction;
+		virtual float getFlux(math::vec3 position) = 0;
+	};
 
-      virtual float getFlux(math::vec3 position){
-        return 0;
-      }
-  };
+	class DirectionalLight : public Light
+	{
+	public:
+		math::vec3 direction;
 
-  class PointLight : public Light{
-    public:
-      virtual float getFlux(math::vec3 position){
-        return 0;
-      }
-  };
+		virtual float getFlux(math::vec3 position)
+		{
+			return 0;
+		}
+	};
 
-  class SpotLight : public Light{
-    public:
-      float innerConeAngle;
-      float outerConeAngle;
-      math::vec3 direction;
+	class PointLight : public Light
+	{
+	public:
+		virtual float getFlux(math::vec3 position)
+		{
+			return 0;
+		}
+	};
 
-      virtual float getFlux(math::vec3 position){
-        return 0;
-      }
-  };
+	class SpotLight : public Light
+	{
+	public:
+		float innerConeAngle;
+		float outerConeAngle;
+		math::vec3 direction;
 
-  class Scene : Shape {
-    public:
-      struct Args {
-        const char* filePath;
-      };
+		virtual float getFlux(math::vec3 position)
+		{
+			return 0;
+		}
+	};
 
-      Scene(const Args &args);
-      ~Scene();
+	class Scene : Shape
+	{
+	public:
+		struct Args
+		{
+			const char* filePath;
+		};
 
-      virtual bool intersect(const Ray& r, HitInfo &info);
-    private:
-      std::unordered_map<std::string, Light*> light_map;
-      std::unordered_map<std::string, Camera*> camera_map;
-      void loadScene(const aiScene* scene);
-      Object* loadObject(aiNode* node, Object* parent);
-      Light** loadLights(const aiScene* scene);
-      Material* loadMaterials(const aiScene* scene);
-      Camera loadCamera(aiCamera* cam);
-      Mesh* loadMeshes(const aiScene* scene);
-      void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
-      Object* rootObject;
-      Object* objects;      //Vector<Object> objects;
-      Camera camera;
-      Light** lights;       //Make vector?
-      Material* materials;  //Vector<Material> materials;
-      Mesh* meshes;         //Vector<Mesh> meshes;
-      int numLights;
-      int numMaterials;
-      int numMeshes;
-      int numObjects;
-  };
+		Scene(const Args &args);
+		~Scene();
+
+		virtual bool intersect(const Ray& r, HitInfo &info);
+	private:
+		std::unordered_map<std::string, Light*> light_map;
+		std::unordered_map<std::string, Camera*> camera_map;
+		void loadScene(const aiScene* scene);
+		Object* loadObject(aiNode* node, Object* parent);
+		Light** loadLights(const aiScene* scene);
+		Material* loadMaterials(const aiScene* scene);
+		Camera loadCamera(aiCamera* cam);
+		Mesh* loadMeshes(const aiScene* scene);
+		void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
+		Object* rootObject;
+		Object* objects;      //Vector<Object> objects;
+		Camera camera;
+		Light** lights;       //Make vector?
+		Material* materials;  //Vector<Material> materials;
+		Mesh* meshes;         //Vector<Mesh> meshes;
+		int numLights;
+		int numMaterials;
+		int numMeshes;
+		int numObjects;
+	};
 
 } // namespace acr
 

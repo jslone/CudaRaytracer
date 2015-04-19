@@ -5,10 +5,12 @@
 #include "gtc/matrix_transform.hpp"
 #include "gtx/intersect.hpp"
 
-namespace acr {
-  namespace math {
-    using namespace glm;
-  }
+namespace acr
+{
+	namespace math
+	{
+		using namespace glm;
+	}
 }
 
 #endif //_MATH_H_
