@@ -10,6 +10,7 @@ namespace acr
 	class vector
 	{
 	public:
+		vector<T>();
 		vector<T>(const thrust::host_vector<T> &h);
 		vector<T>(size_t size);
 		
@@ -25,6 +26,9 @@ namespace acr
 		T *devPtr;
 		size_t devSize;
 	};
+
+	template<typename T>
+	vector<T>::vector() {}
 	
 	template<typename T>
 	vector<T>::vector(size_t size)
