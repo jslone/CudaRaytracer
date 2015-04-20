@@ -95,13 +95,13 @@ namespace acr
 	__host__
 	void Scene::loadMeshes(const aiScene* scene)
 	{
-		meshes = vector<Mesh>(scene->mMeshes, scene->mMeshes + scene->mNumMeshes);
+		meshes = vector<Mesh>(thrust::host_vector<Mesh>(scene->mMeshes, scene->mMeshes + scene->mNumMeshes));
 	}
 
 	__host__
 	void Scene::loadMaterials(const aiScene* scene)
 	{
-		materials = vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials);
+		materials = vector<Material>(thrust::host_vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials));
 	}
 	
 	__host__
@@ -115,7 +115,7 @@ namespace acr
 	__host__
 	void Scene::loadLights(const aiScene* scene)
 	{
-		lights = vector<Light>(scene->mLights, scene->mLights + scene->mNumLights);
+		lights = vector<Light>(thrust::host_vector<Light>(scene->mLights, scene->mLights + scene->mNumLights));
 		
 		for(int i = 0; i < scene->mNumLights; i++)
 		{
