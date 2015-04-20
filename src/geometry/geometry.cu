@@ -51,6 +51,8 @@ namespace acr
 		}
 	}
 
+	Mesh::~Mesh() {}
+
 	bool Mesh::intersect(const Ray &r, HitInfo &info)
 	{
 		bool intersected = false;
