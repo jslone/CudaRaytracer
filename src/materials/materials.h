@@ -11,7 +11,7 @@ namespace acr
 	class Material
 	{
 		public:
-			Material(const aiMaterial &material);
+			Material(const aiMaterial *material);
 			Color3 ambient,diffuse,specular;
 			float refractiveIndex;
 	};
@@ -21,18 +21,18 @@ namespace acr
 		return Color3(aicol.r, aicol.g, aicol.b);
 	}
 
-	Material::Material(const aiMaterial &material)
+	Material::Material(const aiMaterial *material)
 	{
 		aiColor3D aiDiffuse,aiAmbient,aiSpecular;
-		material.Get(AI_MATKEY_COLOR_DIFFUSE, aiDiffuse);
-		material.Get(AI_MATKEY_COLOR_AMBIENT, aiAmbient);
-		material.Get(AI_MATKEY_COLOR_SPECULAR, aiSpecular);
+		material->Get(AI_MATKEY_COLOR_DIFFUSE, aiDiffuse);
+		material->Get(AI_MATKEY_COLOR_AMBIENT, aiAmbient);
+		material->Get(AI_MATKEY_COLOR_SPECULAR, aiSpecular);
 
 		diffuse = getColor3(aiDiffuse);
 		ambient = getColor3(aiAmbient);
 		specular = getColor3(aiSpecular);
 
-		material.GET(AI_MATKEY_REFRACTI, refractiveIndex);
+		material->Get(AI_MATKEY_REFRACTI, refractiveIndex);
 	}
 
 } // namespace acr

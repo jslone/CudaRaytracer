@@ -44,7 +44,7 @@ namespace acr
 	class Mesh : Shape
 	{
 	public:
-		Mesh(const aiMesh &aiMesh);
+		Mesh(const aiMesh *aiMesh);
 		Mesh(float *positions, float *normals, float *colors, uint32_t *indices, uint32_t numVertices, uint32_t numFaces);
 		Mesh();
 		~Mesh();

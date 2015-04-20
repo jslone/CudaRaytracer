@@ -12,16 +12,16 @@ namespace acr
 	public:
 		using thrust::host_vector<T>::host_vector;
 
-		friend T& operator[] (size_t pos);
-		friend T& operator[] const (size_t pos);
+		T& operator[] (size_t pos);
+		T& operator[] (size_t pos) const;
 		
 		void flushToDevice();
-		friend size_t size();
+		size_t size();
 		
 	private:
 		thrust::device_vector<T> d;
 		T *devPtr;
-		size_t size;
+		size_t devSize;
 	};
 
 
@@ -30,47 +30,47 @@ namespace acr
 	{
 		d = *this;
 		devPtr = thrust::raw_pointer_cast(d.data());
-		size = this->size();
+		devSize = this->size();
 	}
 	
 #ifdef __CUDA__ARCH__
 	
 	template<typename T>
-	inline T& operator[] (size_t pos)
+	T& vector<T>::operator[] (size_t pos)
 	{
 		return devPtr[pos];
 	}
 
 	template<typename T>
-	inline T& operator[] const (size_t pos)
+	T& vector<T>::operator[] (size_t pos) const
 	{		
 		return devPtr[pos];
 	}
 
 	template<typename T>
-	inline size_t size()
+	size_t vector<T>::size()
 	{
-		return length;
+		return devSize;
 	}
 
 #else
 
 	template<typename T>
-	inline T& operator[] (size_t pos)
+	T& vector<T>::operator[] (size_t pos)
 	{
-		return thrust::host_vector::operator[](pos);
+		return thrust::host_vector<T>::operator[](pos);
 	}
 
 	template<typename T>
-	inline T& operator[] const (size_t pos)
+	T& vector<T>::operator[] (size_t pos) const
 	{		
-		return thrust::host_vector::operator[](pos);
+		return thrust::host_vector<T>::operator[](pos);
 	}
 
 	template<typename T>
-	inline size_t size()
+	size_t vector<T>::size()
 	{
-		return thrust::host_vector::size();
+		return thrust::host_vector<T>::size();
 	}
 
 #endif

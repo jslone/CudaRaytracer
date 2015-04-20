@@ -13,7 +13,7 @@ namespace acr
 	class Object : Shape
 	{
 	public:
-		Object(const aiNode &node, Object *parent);
+		Object(const aiNode *node, int index, Object *parent);
 		std::string name;
 		
 		int index;
@@ -34,7 +34,8 @@ namespace acr
 	class Camera
 	{
 	public:
-		Camera(const aiCamera &camera);
+		Camera();
+		Camera(const aiCamera *camera);
 		float aspectRatio;
 		float horizontalFOV;
 		math::mat4 globalTransform;
@@ -43,14 +44,14 @@ namespace acr
 	class Light
 	{
 	public:
-		Light(const aiLight &aiLight);
+		Light(const aiLight *aiLight);
 		
 		enum Type
 		{
 			POINT,
 			DIRECTIONAL,
 			SPOT
-		}
+		};
 		
 		Type type;
 		
@@ -79,19 +80,17 @@ namespace acr
 			const char* filePath;
 		};
 
-		Scene(const aiScene *scene);
 		Scene(const Args &args);
 		~Scene();
 
 		virtual bool intersect(const Ray& r, HitInfo &info);
 	private:
 		void loadScene(const aiScene* scene);
-		void loadObject(const aiNode* node, Object* parent);
+		int loadObject(const aiNode* node, Object* parent);
 		void loadLights(const aiScene* scene);
 		void loadMaterials(const aiScene* scene);
 		void loadCamera(const aiScene* scene);
 		void loadMeshes(const aiScene* scene);
-		void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
 
 		std::unordered_map<std::string, Light*> light_map;
 		std::unordered_map<std::string, Camera*> camera_map;
@@ -101,7 +100,7 @@ namespace acr
 		vector<Mesh>			meshes;
 		vector<Light>			lights;
 		
-		int rootObject;
+		int rootIndex;
 		Camera camera;
 	
 	};

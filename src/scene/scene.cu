@@ -12,7 +12,20 @@ namespace acr
 		return math::vec3(aivec.x, aivec.y, aivec.z);
 	}
 
-	Camera::Camera(const aiCamera &cam)
+	inline void getMathMatrix(const aiMatrix4x4& aiMatrix, math::mat4& mathMat)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				mathMat[i][j] = aiMatrix[j][i];
+			}
+		}
+	}
+
+	Camera::Camera() {}
+
+	Camera::Camera(const aiCamera *cam)
 	{
 		aspectRatio = cam->mAspect;
 		horizontalFOV = cam->mHorizontalFOV;
@@ -59,20 +72,20 @@ namespace acr
 		printf("Successfully loaded 1 camera.\n");
 		//Load lights
 		loadLights(scene);
-		printf("Successfully loaded %d light(s).\n", numLights);
+		printf("Successfully loaded %d light(s).\n", lights.size());
 		//Load materials
 		loadMaterials(scene);
-		printf("Successfully loaded %d material(s).\n", numMaterials);
+		printf("Successfully loaded %d material(s).\n", materials.size());
 
 		//Load meshes
 		loadMeshes(scene);
-		printf("Successfully loaded %d mesh(es).\n", numMeshes);
+		printf("Successfully loaded %d mesh(es).\n", meshes.size());
 
 		//Load object hierarchy
 		rootIndex = loadObject(scene->mRootNode, NULL);
 		printf("Successfully loaded hierarchy.\n");
 
-		for (int i = 0; i < numObjects; i++)
+		for (int i = 0; i < objects.size(); i++)
 		{
 			printf("Object[%d]: %s\n", i, objects[i].name.c_str());
 		}
@@ -83,17 +96,6 @@ namespace acr
 		meshes = vector<Mesh>(scene->mMeshes, scene->mMeshes + scene->mNumMeshes);
 	}
 
-	void Scene::getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat)
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			for (int j = 0; j < 4; j++)
-			{
-				mathMat[i][j] = aiMatrix[j][i];
-			}
-		}
-	}
-
 	void Scene::loadMaterials(const aiScene* scene)
 	{
 		materials = vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials);
@@ -101,7 +103,7 @@ namespace acr
 
 	void Scene::loadCamera(const aiScene *scene)
 	{
-		camera = camera(scene->mCameras[0]);
+		camera = Camera(scene->mCameras[0]);
 		std::string name = std::string(scene->mCameras[0]->mName.C_Str());
 		camera_map.insert({ name, &camera });
 	}
@@ -122,7 +124,7 @@ namespace acr
 	{
 		// Initialize space, meshes, transforms
 		Object tmp(node,objects.size(),parent);
-		objects.push_back(obj);
+		objects.push_back(tmp);
 
 		// Get handle to data actually in vector
 		Object &obj = objects[tmp.index];
@@ -171,29 +173,29 @@ namespace acr
 		return intersected;
 	}
 
-	Light::Light(const aiLight &aiLight)
-		: attConstant(aiLight.mAttenuationConstant)
-		, attLinear(aiLight.mAttenuationLinear)
-		, attQuadratic(aiLight.mAttenuationQuadratic)
-		, innerConeAngle(aiLight.mAngleInnerCone)
-		, outerConeAngle(aiLight.mAngleOuterCone)
+	Light::Light(const aiLight *aiLight)
+		: attConstant(aiLight->mAttenuationConstant)
+		, attLinear(aiLight->mAttenuationLinear)
+		, attQuadratic(aiLight->mAttenuationQuadratic)
+		, innerConeAngle(aiLight->mAngleInnerCone)
+		, outerConeAngle(aiLight->mAngleOuterCone)
 	{
-		position = getVec3(aiLight.mPosition);
-		direction = getVec3(aiLight.mDirection);
+		position = getVec3(aiLight->mPosition);
+		direction = getVec3(aiLight->mDirection);
 
-		ambient = getColor3(aiLight.mColorAmbient);
-		diffuse = getColor3(aiLight.mColorDiffuse);
-		specular = getColor3(aiLight.mColorSpecular);
+		ambient = getColor3(aiLight->mColorAmbient);
+		diffuse = getColor3(aiLight->mColorDiffuse);
+		specular = getColor3(aiLight->mColorSpecular);
 	}
 
-	Object::Object(const aiNode &node, int index, Object *parent)
-		: name(node.name.C_Str())
+	Object::Object(const aiNode *node, int index, Object *parent)
+		: name(node->mName.C_Str())
 		, index(index)
 		, parentIndex(parent ? parent->index : -1)
-		, children(node.mNumChildren)
-		, meshes(node.mMeshes, node.mMeshes + node.mNumMeshes)
+		, children(node->mNumChildren)
+		, meshes(node->mMeshes, node->mMeshes + node->mNumMeshes)
 	{
-		getMathMatrix(node.mTransformation,localTransform);
+		getMathMatrix(node->mTransformation,localTransform);
 		globalTransform = parent ? parent->globalTransform * localTransform : localTransform;
 		globalInverseTransform = math::inverse(globalTransform);
 		globalNormalTransform = math::transpose(globalInverseTransform);
@@ -208,9 +210,9 @@ namespace acr
 
 		// mesh intersection
 		bool intersected = false;
-		for (int i = 0; i < objects.size(); i++)
+		for (int i = 0; i < meshes.size(); i++)
 		{
-			intersected = objects[i].intersect(r, info);
+			intersected = false;//objects[i].intersect(r, info);
 		}
 
 		// transform to world space
