@@ -4,8 +4,10 @@
 
 namespace acr
 {
+	__host__ __device__
 	Mesh::Mesh() {}
 
+	__host__
 	Mesh::Mesh(const aiMesh *aiMesh)
 	{
 		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
@@ -26,7 +28,8 @@ namespace acr
 			}
 		}
 	}
-
+	
+	__host__
 	Mesh::Mesh(float *positions, float *normals, float *colors, uint32_t *indices, uint32_t numVertices, uint32_t numFaces)
 		: vertices(numVertices)
 		, faces(numFaces)
@@ -51,6 +54,7 @@ namespace acr
 		}
 	}
 
+	__host__ __device__
 	Mesh::~Mesh() {}
 
 	bool Mesh::intersect(const Ray &r, HitInfo &info)
