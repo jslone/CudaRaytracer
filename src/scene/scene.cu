@@ -63,6 +63,7 @@ namespace acr
 		//Todo
 	}
 
+	__host__
 	void Scene::loadScene(const aiScene* scene)
 	{
 		//Load textures ??? scene->mTextures[]	scene->mNumTextures
@@ -91,16 +92,19 @@ namespace acr
 		}
 	}
 
+	__host__
 	void Scene::loadMeshes(const aiScene* scene)
 	{
 		meshes = vector<Mesh>(scene->mMeshes, scene->mMeshes + scene->mNumMeshes);
 	}
 
+	__host__
 	void Scene::loadMaterials(const aiScene* scene)
 	{
 		materials = vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials);
 	}
-
+	
+	__host__
 	void Scene::loadCamera(const aiScene *scene)
 	{
 		camera = Camera(scene->mCameras[0]);
@@ -108,6 +112,7 @@ namespace acr
 		camera_map.insert({ name, &camera });
 	}
 
+	__host__
 	void Scene::loadLights(const aiScene* scene)
 	{
 		lights = vector<Light>(scene->mLights, scene->mLights + scene->mNumLights);
@@ -120,6 +125,7 @@ namespace acr
 		}
 	}
 
+	__host__
 	int Scene::loadObject(const aiNode* node, Object *parent)
 	{
 		// Initialize space, meshes, transforms
