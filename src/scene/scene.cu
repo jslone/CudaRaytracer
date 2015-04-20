@@ -7,6 +7,21 @@
 
 namespace acr
 {
+	inline math::vec3 getVec3(aiVector3D aivec)
+	{
+		return math::vec3(aivec.x, aivec.y, aivec.z);
+	}
+
+	Camera::Camera(const aiCamera &cam)
+	{
+		aspectRatio = cam->mAspect;
+		horizontalFOV = cam->mHorizontalFOV;
+		aiVector3D eye = cam->mPosition;
+		aiVector3D up = cam->mUp;
+		aiVector3D center = cam->mLookAt;
+		globalTransform = math::lookAt(getVec3(eye), getVec3(center), getVec3(up));
+	}
+
 	Scene::Scene(const Scene::Args &args)
 	{
 		Assimp::Importer importer;
@@ -40,7 +55,7 @@ namespace acr
 		//Load textures ??? scene->mTextures[]	scene->mNumTextures
 		printf("Loading scene...\n");
 		//Load camera
-		loadCamera(scene->mCameras[0]); //NULL CHECK
+		loadCamera(scene); //NULL CHECK
 		printf("Successfully loaded 1 camera.\n");
 		//Load lights
 		loadLights(scene);
@@ -50,12 +65,11 @@ namespace acr
 		printf("Successfully loaded %d material(s).\n", numMaterials);
 
 		//Load meshes
-		//meshes = loadMeshes(scene);
-		//printf("Successfully loaded %d mesh(es).\n", numMeshes);
+		loadMeshes(scene);
+		printf("Successfully loaded %d mesh(es).\n", numMeshes);
 
 		//Load object hierarchy
-		objects = new Object[numMeshes];
-		rootObject = loadObject(scene->mRootNode, NULL);
+		rootIndex = loadObject(scene->mRootNode, NULL);
 		printf("Successfully loaded hierarchy.\n");
 
 		for (int i = 0; i < numObjects; i++)
@@ -64,7 +78,7 @@ namespace acr
 		}
 	}
 
-	Mesh* Scene::loadMeshes(const aiScene* scene)
+	void Scene::loadMeshes(const aiScene* scene)
 	{
 		meshes = vector<Mesh>(scene->mMeshes, scene->mMeshes + scene->mNumMeshes);
 	}
@@ -80,195 +94,110 @@ namespace acr
 		}
 	}
 
-	Material* Scene::loadMaterials(const aiScene* scene)
+	void Scene::loadMaterials(const aiScene* scene)
 	{
-		numMaterials = scene->mNumMaterials;
-		Material* mats = new Material[numMaterials];
+		materials = vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials);
+	}
 
-		for (int i = 0; i < numMaterials; i++)
+	void Scene::loadCamera(const aiScene *scene)
+	{
+		camera = camera(scene->mCameras[0]);
+		std::string name = std::string(scene->mCameras[0]->mName.C_Str());
+		camera_map.insert({ name, &camera });
+	}
+
+	void Scene::loadLights(const aiScene* scene)
+	{
+		lights = vector<Light>(scene->mLights, scene->mLights + scene->mNumLights);
+		
+		for(int i = 0; i < scene->mNumLights; i++)
 		{
-			Material &mat = mats[i];
-			aiMaterial* m = scene->mMaterials[i];
+			//Put light into hash so we can retrieve it later by name :'(
+			std::string name = std::string(scene->mLights[i]->mName.C_Str());
+			light_map.insert({ name, &lights[i] });
+		}
+	}
 
-			aiColor3D diffuse, ambient, specular;
-			m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
-			m->Get(AI_MATKEY_COLOR_AMBIENT, ambient);
-			m->Get(AI_MATKEY_COLOR_SPECULAR, specular);
-			mat.diffuse = getColor3(diffuse);
-			mat.ambient = getColor3(ambient);
-			mat.specular = getColor3(specular);
-			m->Get(AI_MATKEY_REFRACTI, mat.refractiveIndex);
+	int Scene::loadObject(const aiNode* node, Object *parent)
+	{
+		// Initialize space, meshes, transforms
+		Object tmp(node,objects.size(),parent);
+		objects.push_back(obj);
+
+		// Get handle to data actually in vector
+		Object &obj = objects[tmp.index];
+		
+		// Check to see if these objects are lights or cameras
+		std::unordered_map<std::string, Light*>::const_iterator light_got = light_map.find(obj.name);
+		std::unordered_map<std::string, Camera*>::const_iterator cam_got = camera_map.find(obj.name);
+
+		if (light_got != light_map.end())
+		{
+			Light* l = light_got->second;
+			l->position = math::vec3(obj.globalTransform * math::vec4(l->position, 1.0));
+		}
+
+		if (cam_got != camera_map.end())
+		{
+			Camera* c = cam_got->second;
+			camera.globalTransform = obj.globalTransform * c->globalTransform;
 
 #ifdef LOAD_VERBOSE
 			printf("\n");
-			printf("Material[%d]:\n", i);
-			printf("-->Diffuse[%f %f %f]\n", mat.diffuse.x, mat.diffuse.y, mat.diffuse.z);
-			printf("-->Ambient[%f %f %f]\n", mat.ambient.x, mat.ambient.y, mat.ambient.z);
-			printf("-->Specular[%f %f %f]\n", mat.specular.x, mat.specular.y, mat.specular.z);
+			printf("Camera:\n");
+			math::vec3 pos = math::vec3(camera.globalTransform * math::vec4(0,0,0,1));
+			printf("-->Position[%f %f %f]\n", pos.x, pos.y, pos.z);
+			printf("-->Aspect Ratio[%f]\n", camera.aspectRatio);
+			printf("-->HorizontalFOV[%f]\n", camera.horizontalFOV);
 #endif
 		}
 
-		return mats;
-	}
-
-	Camera Scene::loadCamera(aiCamera* cam)
-	{
-		Camera c;
-		c.aspectRatio = cam->mAspect;
-		c.horizontalFOV = cam->mHorizontalFOV;
-		aiVector3D eye = cam->mPosition;
-		aiVector3D up = cam->mUp;
-		aiVector3D center = cam->mLookAt;
-		c.globalTransform = math::lookAt(getTvec3(eye), getTvec3(center), getTvec3(up));
-
-		std::string name = std::string(cam->mName.C_Str());
-		camera_map.insert({ name, &c });
-
-		return c;
-	}
-
-	Light** Scene::loadLights(const aiScene* scene)
-	{
-		numLights = scene->mNumLights;
-		Light** ls = new Light*[numLights];
-		for (int i = 0; i < numLights; i++)
+		// Load children
+		for(int i = 0; i < node->mNumChildren; i++)
 		{
-			aiLight* currentLight = scene->mLights[i];
-			Light* l;
-
-			switch (currentLight->mType)
-			{
-				case aiLightSource_DIRECTIONAL:
-					l = (Light*)new DirectionalLight;
-					((DirectionalLight*)l)->direction = getVec3(currentLight->mDirection);
-					break;
-				case aiLightSource_SPOT:
-					l = (Light*)new SpotLight;
-					((SpotLight*)l)->direction = getVec3(currentLight->mDirection);
-					((SpotLight*)l)->innerConeAngle = currentLight->mAngleInnerCone;
-					((SpotLight*)l)->outerConeAngle = currentLight->mAngleOuterCone;
-					break;
-				default:
-					l = (Light*)new PointLight;
-					break;
-			}
-
-			//Put light into hash so we can retrieve it later by name :'(
-			std::string name = std::string(currentLight->mName.C_Str());
-			light_map.insert({ name, l });
-
-			l->attConstant = currentLight->mAttenuationConstant;
-			l->attLinear = currentLight->mAttenuationLinear;
-			l->attQuadratic = currentLight->mAttenuationQuadratic;
-			l->ambient = getColor3(currentLight->mColorAmbient);
-			l->diffuse = getColor3(currentLight->mColorDiffuse);
-			l->specular = getColor3(currentLight->mColorSpecular);
-			l->position = getVec3(currentLight->mPosition);
-
-			ls[i] = l;
+			obj.children[i] = loadObject(node->mChildren[i], &obj);
 		}
-		return ls;
-	}
-
-	Object* Scene::loadObject(aiNode* node, Object* parent)
-	{
-		Object* obj = &objects[numObjects];
-		obj->parent = parent;
-		obj->index = numObjects++;
-
-		if (parent)
-		{
-			//has parent, so get transform
-			getMathMatrix(node->mTransformation, obj->localTransform);
-
-			obj->globalTransform = parent->globalTransform * obj->localTransform;
-			obj->globalInverseTransform = inverse(obj->globalTransform);
-			obj->parentIndex = parent->index;
-			obj->name = std::string(node->mName.C_Str());;
-
-			std::unordered_map<std::string, Light*>::const_iterator light_got = light_map.find(obj->name);
-			std::unordered_map<std::string, Camera*>::const_iterator cam_got = camera_map.find(obj->name);
-
-			if (light_got != light_map.end())
-			{
-				Light* l = light_got->second;
-				l->position = math::vec3(obj->globalTransform * math::vec4(l->position, 1.0));
-			}
-
-			if (cam_got != camera_map.end())
-			{
-				Camera* c = cam_got->second;
-				camera.globalTransform = obj->globalTransform * c->globalTransform;
-
-#ifdef LOAD_VERBOSE
-				printf("\n");
-				printf("Camera:\n");
-				math::vec3 pos = math::vec3(camera.globalTransform * math::vec4(0,0,0,1));
-				printf("-->Position[%f %f %f]\n", pos.x, pos.y, pos.z);
-				printf("-->Aspect Ratio[%f]\n", camera.aspectRatio);
-				printf("-->HorizontalFOV[%f]\n", camera.horizontalFOV);
-#endif
-			}
-
-		}
-		else
-		{
-			//no parent, must be root
-			obj->globalTransform = math::mat4();
-			obj->parentIndex = -1;
-		}
-
-		if (node->mNumMeshes <= 1)
-		{ //Only one mesh
-			if (node->mNumMeshes > 0)
-			{
-				obj->meshIndex = node->mMeshes[0];
-			}
-			else
-			{
-				obj->meshIndex = -1;
-			}
-
-			obj->numChildren = node->mNumChildren;
-			obj->children = new Object*[node->mNumChildren];
-
-			for (unsigned int i = 0; i < node->mNumChildren; i++)
-			{
-				obj->children[i] = loadObject(node->mChildren[i], obj);
-			}
-		}
-		else
-		{ //More than one mesh
-			obj->meshIndex = -1;
-			obj->numChildren = node->mNumChildren + node->mNumMeshes;
-
-			for (unsigned int i = 0; i < node->mNumMeshes; i++)
-			{
-				Object* child = new Object;
-				child->numChildren = 0;
-				child->parent = obj;
-				child->meshIndex = node->mMeshes[i];
-				child->globalTransform = obj->globalTransform;
-				child->globalInverseTransform = obj->globalInverseTransform;
-			}
-
-			for (unsigned int i = 0; i < node->mNumChildren; i++)
-			{
-				obj->children[i + node->mNumMeshes] = loadObject(node->mChildren[i], obj);
-			}
-		}
-
-		return obj;
+		
+		return obj.index;
 	}
 
 	bool Scene::intersect(const Ray &r, HitInfo &info)
 	{
 		bool intersected = false;
-		for (int i = 0; i < numObjects; i++)
+		for (int i = 0; i < objects.size(); i++)
 		{
 			intersected = objects[i].intersect(r, info);
 		}
 		return intersected;
+	}
+
+	Light::Light(const aiLight &aiLight)
+		: attConstant(aiLight.mAttenuationConstant)
+		, attLinear(aiLight.mAttenuationLinear)
+		, attQuadratic(aiLight.mAttenuationQuadratic)
+		, innerConeAngle(aiLight.mAngleInnerCone)
+		, outerConeAngle(aiLight.mAngleOuterCone)
+	{
+		position = getVec3(aiLight.mPosition);
+		direction = getVec3(aiLight.mDirection);
+
+		ambient = getColor3(aiLight.mColorAmbient);
+		diffuse = getColor3(aiLight.mColorDiffuse);
+		specular = getColor3(aiLight.mColorSpecular);
+	}
+
+	Object::Object(const aiNode &node, int index, Object *parent)
+		: name(node.name.C_Str())
+		, index(index)
+		, parentIndex(parent ? parent->index : -1)
+		, children(node.mNumChildren)
+		, meshes(node.mMeshes, node.mMeshes + node.mNumMeshes)
+	{
+		getMathMatrix(node.mTransformation,localTransform);
+		globalTransform = parent ? parent->globalTransform * localTransform : localTransform;
+		globalInverseTransform = math::inverse(globalTransform);
+		globalNormalTransform = math::transpose(globalInverseTransform);
+		globalInverseNormalTransform = math::inverse(globalNormalTransform);
 	}
 
 	bool Object::intersect(const Ray &r, HitInfo &info)
@@ -278,12 +207,18 @@ namespace acr
 		lr.d = math::vec3(globalInverseNormalTransform * math::vec4(r.d, 1.0));
 
 		// mesh intersection
-		if (false)
+		bool intersected = false;
+		for (int i = 0; i < objects.size(); i++)
+		{
+			intersected = objects[i].intersect(r, info);
+		}
+
+		// transform to world space
+		if(intersected)
 		{
 			info.point.position = math::vec3(globalTransform * math::vec4(info.point.position, 1.0));
 			info.point.normal = math::vec3(globalNormalTransform * math::vec4(info.point.normal, 1.0));
-			return true;
 		}
-		return false;
+		return intersected;
 	}
 }

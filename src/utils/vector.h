@@ -12,11 +12,16 @@ namespace acr
 	public:
 		using thrust::host_vector<T>::host_vector;
 
+		friend T& operator[] (size_t pos);
+		friend T& operator[] const (size_t pos);
+		
 		void flushToDevice();
-		T *devPtr;
-		uint32_t length;
+		friend size_t size();
+		
 	private:
 		thrust::device_vector<T> d;
+		T *devPtr;
+		size_t size;
 	};
 
 
@@ -25,8 +30,51 @@ namespace acr
 	{
 		d = *this;
 		devPtr = thrust::raw_pointer_cast(d.data());
-		length = this->size();
+		size = this->size();
 	}
+	
+#ifdef __CUDA__ARCH__
+	
+	template<typename T>
+	inline T& operator[] (size_t pos)
+	{
+		return devPtr[pos];
+	}
+
+	template<typename T>
+	inline T& operator[] const (size_t pos)
+	{		
+		return devPtr[pos];
+	}
+
+	template<typename T>
+	inline size_t size()
+	{
+		return length;
+	}
+
+#else
+
+	template<typename T>
+	inline T& operator[] (size_t pos)
+	{
+		return thrust::host_vector::operator[](pos);
+	}
+
+	template<typename T>
+	inline T& operator[] const (size_t pos)
+	{		
+		return thrust::host_vector::operator[](pos);
+	}
+
+	template<typename T>
+	inline size_t size()
+	{
+		return thrust::host_vector::size();
+	}
+
+#endif
+
 } // namespace acr
 
 #endif //_VECTOR_H_
