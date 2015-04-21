@@ -4,6 +4,7 @@
 #include <cuda.h>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
+#include <thrust/copy.h>
 
 namespace acr
 {
@@ -12,6 +13,7 @@ namespace acr
 	{
 	public:
 		vector<T>();
+		vector<T>(vector<T> &v);
 		vector<T>(const thrust::host_vector<T> &h);
 		~vector<T>();
 
@@ -28,20 +30,30 @@ namespace acr
 	vector<T>::vector() {}
 	
 	template<typename T>
+	vector<T>::vector(vector<T> &v)
+		: devPtr(v.devPtr)
+		, devSize(v.devSize)
+	{
+		v.devPtr = nullptr;
+		v.devSize = 0;
+	}
+
+	template<typename T>
 	vector<T>::vector(const thrust::host_vector<T> &h)
 	{
 		devSize = h.size();
 		cudaMalloc((void**)&devPtr, devSize * sizeof(T));
-
+	
 		thrust::device_ptr<T> thrustPtr(devPtr);
 
-		thrust::copy(thrustPtr, thrustPtr + devSize, h.begin());
+		thrust::copy(h.begin(), h.end(), thrustPtr);
 	}
 
 	template<typename T>
 	vector<T>::~vector()
 	{
-		cudaFree(devPtr);
+		if(devPtr)
+			cudaFree(devPtr);
 		devSize = 0;
 	}
 	
