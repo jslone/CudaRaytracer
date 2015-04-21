@@ -13,7 +13,8 @@ namespace acr
 	public:
 		vector<T>();
 		vector<T>(const thrust::host_vector<T> &h);
-		
+		~vector<T>();
+
 		T& operator[] (size_t pos);
 		T& operator[] (size_t pos) const;
 		
@@ -32,9 +33,16 @@ namespace acr
 		devSize = h.size();
 		cudaMalloc((void**)&devPtr, devSize * sizeof(T));
 
-		thrust::dev_ptr<T> thrustPtr(devPtr);
+		thrust::device_ptr<T> thrustPtr(devPtr);
 
-		thrust::copy(devPtr, devPtr + devSize, h.begin());
+		thrust::copy(thrustPtr, thrustPtr + devSize, h.begin());
+	}
+
+	template<typename T>
+	vector<T>::~vector()
+	{
+		cudaFree(devPtr);
+		devSize = 0;
 	}
 	
 	template<typename T>

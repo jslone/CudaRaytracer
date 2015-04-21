@@ -22,7 +22,7 @@ namespace acr
 		}
 		vertices = vector<Vertex>(vs);
 
-		thrust::host_vector<Faces> f(aiMesh->mNumFaces);
+		thrust::host_vector<Face> f(aiMesh->mNumFaces);
 		for (uint32_t i = 0; i < aiMesh->mNumFaces; i++)
 		{
 			for (uint32_t j = 0; j < 3; j++)
@@ -34,11 +34,7 @@ namespace acr
 	}
 	
 	__host__
-	Mesh::~Mesh()
-	{
-		cudaFree(devPtr);
-		devSize = 0;
-	}
+	Mesh::~Mesh() {}
 
 	__host__
 	bool Mesh::intersect(const Ray &r, HitInfo &info)
