@@ -41,7 +41,7 @@ namespace acr
 	};
 
 
-	class Mesh : Shape
+	class Mesh
 	{
 	public:
 
@@ -54,7 +54,7 @@ namespace acr
 		__host__ __device__
 		~Mesh();
 
-		virtual bool intersect(const Ray &r, HitInfo &info);
+		bool intersect(const Ray &r, HitInfo &info);
 	private:
 		vector<Vertex>  vertices;
 		vector<Face>    faces;

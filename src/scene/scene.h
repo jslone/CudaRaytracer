@@ -10,12 +10,14 @@
 namespace acr
 {
 
-	class Object : Shape
+	class Object
 	{
 	public:
 		Object(const aiNode *node, int index, Object *parent);
-		std::string name;
-		
+		Object(const Object &obj);
+		Object(Object &obj);
+
+		char name[16];
 		int index;
 		int parentIndex;
 		
@@ -28,7 +30,7 @@ namespace acr
 		math::mat4 globalInverseTransform;
 		math::mat4 globalInverseNormalTransform;
 		
-		virtual bool intersect(const Ray &r, HitInfo &info);
+		bool intersect(const Ray &r, HitInfo &info);
 	};
 
 	class Camera
@@ -72,7 +74,7 @@ namespace acr
 		virtual float getFlux(math::vec3 position);
 	};
 	
-	class Scene : Shape
+	class Scene
 	{
 	public:
 		struct Args
@@ -83,15 +85,16 @@ namespace acr
 		Scene(const Args &args);
 		~Scene();
 
-		virtual bool intersect(const Ray& r, HitInfo &info);
+		bool intersect(const Ray& r, HitInfo &info);
 	private:
 		void loadScene(const aiScene* scene);
-		int loadObject(const aiNode* node, Object* parent);
 		void loadLights(const aiScene* scene);
 		void loadMaterials(const aiScene* scene);
 		void loadCamera(const aiScene* scene);
 		void loadMeshes(const aiScene* scene);
+		void loadObjects(const aiScene* scene);
 
+		int loadObject(const aiNode* node, Object* parent, thrust::host_vector<Object> &objs);
 		std::unordered_map<std::string, Light*> light_map;
 		std::unordered_map<std::string, Camera*> camera_map;
 

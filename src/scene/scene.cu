@@ -2,6 +2,7 @@
 #include "assimp/postprocess.h"
 #include "scene.h"
 #include "utils/vector.h"
+#include <cstring>
 
 //#define LOAD_VERBOSE
 
@@ -83,12 +84,12 @@ namespace acr
 		printf("Successfully loaded %d mesh(es).\n", meshes.size());
 
 		//Load object hierarchy
-		rootIndex = loadObject(scene->mRootNode, NULL);
+		loadObjects(scene);
 		printf("Successfully loaded hierarchy.\n");
 
 		for (int i = 0; i < objects.size(); i++)
 		{
-			printf("Object[%d]: %s\n", i, objects[i].name.c_str());
+			printf("Object[%d]: %s\n", i, objects[i].name);
 		}
 	}
 
@@ -124,16 +125,26 @@ namespace acr
 			light_map.insert({ name, &lights[i] });
 		}
 	}
+	
+	__host__
+	void Scene::loadObjects(const aiScene *scene)
+	{
+		thrust::host_vector<Object> objs;
+		rootIndex = loadObject(scene->mRootNode, NULL, objs);
+		//objects = vector<Object>(objs);
+	}
 
 	__host__
-	int Scene::loadObject(const aiNode* node, Object *parent)
+	int Scene::loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs)
 	{
 		// Initialize space, meshes, transforms
-		Object tmp(node,objects.size(),parent);
-		objects.push_back(tmp);
+		Object tmp(node,objs.size(),parent);
+		objs.push_back(tmp);
+		tmp.meshes.clear();
+		tmp.children.clear();
 
 		// Get handle to data actually in vector
-		Object &obj = objects[tmp.index];
+		Object &obj = objs[tmp.index];
 		
 		// Check to see if these objects are lights or cameras
 		std::unordered_map<std::string, Light*>::const_iterator light_got = light_map.find(obj.name);
@@ -161,10 +172,12 @@ namespace acr
 		}
 
 		// Load children
+		thrust::host_vector<int> children(node->mNumChildren);
 		for(int i = 0; i < node->mNumChildren; i++)
 		{
-			obj.children[i] = loadObject(node->mChildren[i], &obj);
+			children[i] = loadObject(node->mChildren[i], &obj, objs);
 		}
+		obj.children = vector<int>(children);
 		
 		return obj.index;
 	}
@@ -194,18 +207,49 @@ namespace acr
 		specular = getColor3(aiLight->mColorSpecular);
 	}
 
-	Object::Object(const aiNode *node, int index, Object *parent)
-		: name(node->mName.C_Str())
-		, index(index)
-		, parentIndex(parent ? parent->index : -1)
-		, children(node->mNumChildren)
-		, meshes(node->mMeshes, node->mMeshes + node->mNumMeshes)
+	Object::Object(const Object &obj)
+		: index(obj.index)
+		, parentIndex(obj.parentIndex)
+		, children(obj.children)
+		, meshes(obj.meshes)
+		, globalTransform(obj.globalTransform)
+		, globalNormalTransform(obj.globalNormalTransform)
+		, globalInverseTransform(obj.globalInverseTransform)
+		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
 	{
+		for(int i = 0; i < sizeof(name); i++)
+		{
+			name[i] = obj.name[i];
+		}
+	}
+	Object::Object(Object &obj)
+		: index(obj.index)
+		, parentIndex(obj.parentIndex)
+		, children(obj.children)
+		, meshes(obj.meshes)
+		, globalTransform(obj.globalTransform)
+		, globalNormalTransform(obj.globalNormalTransform)
+		, globalInverseTransform(obj.globalInverseTransform)
+		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
+	{
+		for(int i = 0; i < sizeof(name); i++)
+		{
+			name[i] = obj.name[i];
+		}
+	}
+
+	Object::Object(const aiNode *node, int index, Object *parent)
+		: index(index)
+		, parentIndex(parent ? parent->index : -1)
+	{
+		std::strncpy(name,node->mName.C_Str(),sizeof(name));
 		getMathMatrix(node->mTransformation,localTransform);
 		globalTransform = parent ? parent->globalTransform * localTransform : localTransform;
 		globalInverseTransform = math::inverse(globalTransform);
 		globalNormalTransform = math::transpose(globalInverseTransform);
 		globalInverseNormalTransform = math::inverse(globalNormalTransform);
+
+		meshes = vector<int>(thrust::host_vector<int>(node->mMeshes, node->mMeshes + node->mNumMeshes));
 	}
 
 	bool Object::intersect(const Ray &r, HitInfo &info)
