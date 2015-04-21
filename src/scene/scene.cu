@@ -8,6 +8,9 @@
 
 namespace acr
 {
+	__constant__
+	Scene devScene;
+
 	inline math::vec3 getVec3(aiVector3D aivec)
 	{
 		return math::vec3(aivec.x, aivec.y, aivec.z);
@@ -36,6 +39,8 @@ namespace acr
 		globalTransform = math::lookAt(getVec3(eye), getVec3(center), getVec3(up));
 	}
 
+	Scene::Scene() {}
+
 	Scene::Scene(const Scene::Args &args)
 	{
 		Assimp::Importer importer;
@@ -53,6 +58,7 @@ namespace acr
 		//DoTheSceneProcessing( scene);
 		loadScene(scene);
 
+		cudaMemcpyToSymbol(&devScene, this, sizeof(Scene));
 		//Flush scene
 		//objects.flushToDevice();
 		//materials.flushToDevice();
@@ -262,7 +268,7 @@ namespace acr
 		bool intersected = false;
 		for (int i = 0; i < meshes.size(); i++)
 		{
-			intersected = false;//objects[i].intersect(r, info);
+			intersected = devScene.meshes[meshes[i]].intersect(r, info);
 		}
 
 		// transform to world space

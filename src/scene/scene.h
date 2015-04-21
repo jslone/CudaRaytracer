@@ -82,6 +82,7 @@ namespace acr
 			const char* filePath;
 		};
 
+		Scene();
 		Scene(const Args &args);
 		~Scene();
 
@@ -107,6 +108,8 @@ namespace acr
 		Camera camera;
 	
 	};
+
+	extern Scene devScene;
 
 } // namespace acr
 

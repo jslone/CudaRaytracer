@@ -40,22 +40,15 @@ namespace acr
 		}
 	}
 
-	__constant__ Scene gScene;
-
-	void Renderer::loadScene(const Scene &scene)
-	{
-		// load scene onto gpu
-	}
-
 	__kernel__
-		void Render::scatterTrace()
+	void Render::scatterTrace()
 	{
 			int x = blockIdx.x * gridDim.x + threadIdx.x;
 			int y = blockIdx.y * gridDim.y + threadIdx.y;
 			int sample = blockIdx.z * gridDim.z + threadIdx.z;
 
 
-		}
+	}
 
 	void Renderer::render()
 	{
