@@ -1,6 +1,7 @@
 #ifndef _APPLICATION_H_
 #define _APPLICATION_H_
 
+#include "utils/SDLManager.h"
 #include "math/math.h"
 #include "renderer/renderer.h"
 #include "scene/scene.h"
@@ -33,6 +34,7 @@ namespace acr
 		void quit();
 
 	private:
+		SDL sdl;
 		Renderer renderer;
 		Scene scene;
 		bool running;
