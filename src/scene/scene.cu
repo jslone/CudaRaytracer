@@ -44,8 +44,11 @@ namespace acr
 		                                       | aiProcess_SortByPType);
 
 		// If the import failed, report it
-		//if(!scene)
-		//To error log: importer.GetErrorString();
+		if(!scene)
+		{
+			std::cout << "ASSIMP importer error: " << importer.GetErrorString() << std::endl;
+			exit(EXIT_FAILURE);
+		}
 
 		// Use the scene
 		//DoTheSceneProcessing( scene);
@@ -67,11 +70,16 @@ namespace acr
 	{
 		//Load textures ??? scene->mTextures[]	scene->mNumTextures
 		printf("Loading scene...\n");
+		
 		//Load camera
-		loadCamera(scene); //NULL CHECK
+		std::string camName;
+		loadCamera(scene,camName); //NULL CHECK
 		printf("Successfully loaded 1 camera.\n");
+		
 		//Load lights
-		loadLights(scene);
+		std::unordered_map<std::string,int> lightMap;
+		thrust::host_vector<Light> hLights(scene->mNumLights);
+		loadLights(scene,hLights,lightMap);
 		printf("Successfully loaded %d light(s).\n", lights.size());
 		//Load materials
 		loadMaterials(scene);
@@ -82,8 +90,10 @@ namespace acr
 		printf("Successfully loaded %d mesh(es).\n", meshes.size());
 
 		//Load object hierarchy
-		loadObjects(scene);
+		loadObjects(scene,camName,lightMap,hLights);
 		printf("Successfully loaded hierarchy.\n");
+
+		lights = vector<Light>(hLights);
 
 		for (int i = 0; i < objects.size(); i++)
 		{
@@ -104,36 +114,35 @@ namespace acr
 	}
 	
 	__host__
-	void Scene::loadCamera(const aiScene *scene)
+	void Scene::loadCamera(const aiScene *scene, std::string &camName)
 	{
 		camera = Camera(scene->mCameras[0]);
-		std::string name = std::string(scene->mCameras[0]->mName.C_Str());
-		camera_map.insert({ name, &camera });
+		camName = std::string(scene->mCameras[0]->mName.C_Str());
 	}
 
 	__host__
-	void Scene::loadLights(const aiScene* scene)
+	void Scene::loadLights(const aiScene* scene, thrust::host_vector<Light> &hLights, std::unordered_map<std::string,int> &lightMap)
 	{
-		lights = vector<Light>(thrust::host_vector<Light>(scene->mLights, scene->mLights + scene->mNumLights));
+		hLights = thrust::host_vector<Light>(scene->mLights, scene->mLights + scene->mNumLights);
 		
 		for(int i = 0; i < scene->mNumLights; i++)
 		{
 			//Put light into hash so we can retrieve it later by name :'(
 			std::string name = std::string(scene->mLights[i]->mName.C_Str());
-			light_map.insert({ name, &lights[i] });
+			lightMap.insert({ name, i });
 		}
 	}
 	
 	__host__
-	void Scene::loadObjects(const aiScene *scene)
+	void Scene::loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights)
 	{
 		thrust::host_vector<Object> objs;
-		rootIndex = loadObject(scene->mRootNode, NULL, objs);
-		//objects = vector<Object>(objs);
+		rootIndex = loadObject(scene->mRootNode, NULL, objs, camName, lightMap, hLights);
+		objects = vector<Object>(objs);
 	}
 
 	__host__
-	int Scene::loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs)
+	int Scene::loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &camName, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights)
 	{
 		// Initialize space, meshes, transforms
 		Object tmp(node,objs.size(),parent);
@@ -145,19 +154,19 @@ namespace acr
 		Object &obj = objs[tmp.index];
 		
 		// Check to see if these objects are lights or cameras
-		std::unordered_map<std::string, Light*>::const_iterator light_got = light_map.find(obj.name);
-		std::unordered_map<std::string, Camera*>::const_iterator cam_got = camera_map.find(obj.name);
+		std::string name = std::string(node->mName.C_Str());
+		auto light_got = lightMap.find(name);
 
-		if (light_got != light_map.end())
+		if (light_got != lightMap.end())
 		{
-			Light* l = light_got->second;
-			l->position = math::vec3(obj.globalTransform * math::vec4(l->position, 1.0));
+			int lIndex = light_got->second;
+			Light &l = hLights[lIndex];
+			l.position = math::vec3(obj.globalTransform * math::vec4(l.position, 1.0));
 		}
 
-		if (cam_got != camera_map.end())
+		if (name == camName)
 		{
-			Camera* c = cam_got->second;
-			camera.globalTransform = obj.globalTransform * c->globalTransform;
+			camera.globalTransform = obj.globalTransform * camera.globalTransform;
 
 #ifdef LOAD_VERBOSE
 			printf("\n");
@@ -173,7 +182,7 @@ namespace acr
 		thrust::host_vector<int> children(node->mNumChildren);
 		for(int i = 0; i < node->mNumChildren; i++)
 		{
-			children[i] = loadObject(node->mChildren[i], &obj, objs);
+			children[i] = loadObject(node->mChildren[i], &obj, objs, camName, lightMap, hLights);
 		}
 		obj.children = vector<int>(children);
 		

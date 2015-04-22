@@ -37,7 +37,7 @@ namespace acr
 		if (renderer == nullptr)
 		{
 			std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
-			exit(EXIT_FAILURE);
+			//exit(EXIT_FAILURE);
 		}
 	}
 

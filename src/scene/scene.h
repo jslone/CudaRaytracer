@@ -92,20 +92,18 @@ namespace acr
 		bool intersect(const Ray& r, HitInfo &info);
 	private:
 		void loadScene(const aiScene* scene);
-		void loadLights(const aiScene* scene);
+		void loadLights(const aiScene* scene, thrust::host_vector<Light> &hLights, std::unordered_map<std::string,int> &lightMap);
 		void loadMaterials(const aiScene* scene);
-		void loadCamera(const aiScene* scene);
+		void loadCamera(const aiScene *scene, std::string &camName);
 		void loadMeshes(const aiScene* scene);
-		void loadObjects(const aiScene* scene);
+		void loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights);
 
-		int loadObject(const aiNode* node, Object* parent, thrust::host_vector<Object> &objs);
-		std::unordered_map<std::string, Light*> light_map;
-		std::unordered_map<std::string, Camera*> camera_map;
+		int loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &name, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights);
 
 		vector<Object>		objects;
 		vector<Material>	materials;
-		vector<Mesh>			meshes;
-		vector<Light>			lights;
+		vector<Mesh>		meshes;
+		vector<Light>		lights;
 		
 		int rootIndex;
 		Camera camera;
