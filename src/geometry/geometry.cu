@@ -4,9 +4,6 @@
 
 namespace acr
 {
-	__host__ __device__
-	Mesh::Mesh() {}
-
 	__host__
 	Mesh::Mesh(const aiMesh *aiMesh)
 	{

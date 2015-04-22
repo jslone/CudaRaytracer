@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include "renderer.h"
 
@@ -5,8 +6,9 @@ namespace acr
 {
 	struct DevParams
 	{
-		Scene scene;
-		math::u32vec2 dim;
+		Scene *scene;
+		char sceneData[sizeof(Scene)];
+		uint32_t x,y;
 	};
 
 	__constant__
@@ -54,8 +56,10 @@ namespace acr
 	void Renderer::loadScene(const Scene &scene)
 	{
 		DevParams params;
-		params.scene = scene;
-		params.dim = dim;
+		params.scene = (Scene*)(&devParams.sceneData[0]);
+		std::memcpy(params.sceneData, &scene, sizeof(Scene));
+		params.x = dim.x;
+		params.y = dim.y;
 
 		cudaMemcpyToSymbol(&devParams, &params, sizeof(DevParams));
 	}

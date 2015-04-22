@@ -13,7 +13,7 @@ namespace acr
 	{
 	public:
 		__device__ __host__
-		vector<T>();
+		vector<T>() = default;
 		
 		__device__ __host__
 		vector<T>(const vector<T> &v);
@@ -46,9 +46,6 @@ namespace acr
 		size_t devSize;
 	};
 
-	template<typename T>
-	vector<T>::vector() {}
-	
 	template<typename T>
 	vector<T>::vector(const vector<T> &v)
 		: devPtr(v.devPtr)

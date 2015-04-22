@@ -46,7 +46,7 @@ namespace acr
 	public:
 
 		__host__ __device__
-		Mesh();
+		Mesh() = default;
 		
 		__host__
 		Mesh(const aiMesh *aiMesh);

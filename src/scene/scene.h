@@ -13,6 +13,7 @@ namespace acr
 	class Object
 	{
 	public:
+		Object() = default;
 		Object(const aiNode *node, int index, Object *parent);
 		Object(const Object &obj);
 		Object(Object &obj);
@@ -30,13 +31,13 @@ namespace acr
 		math::mat4 globalInverseTransform;
 		math::mat4 globalInverseNormalTransform;
 		
-		bool intersect(const Ray &r, HitInfo &info);
+		bool intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshes);
 	};
 
 	class Camera
 	{
 	public:
-		Camera();
+		Camera() = default;
 		Camera(const aiCamera *camera);
 		float aspectRatio;
 		float horizontalFOV;
@@ -46,6 +47,7 @@ namespace acr
 	class Light
 	{
 	public:
+		Light() = default;
 		Light(const aiLight *aiLight);
 		
 		enum Type
@@ -71,7 +73,7 @@ namespace acr
 		float innerConeAngle;
 		float outerConeAngle;
 		
-		virtual float getFlux(math::vec3 position);
+		float getFlux(math::vec3 position);
 	};
 	
 	class Scene
@@ -83,7 +85,7 @@ namespace acr
 			const char* filePath;
 		};
 
-		Scene();
+		Scene() = default;
 		Scene(const Args &args);
 		~Scene();
 
@@ -109,8 +111,6 @@ namespace acr
 		Camera camera;
 	
 	};
-
-	extern Scene devScene;
 
 } // namespace acr
 

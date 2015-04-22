@@ -24,8 +24,6 @@ namespace acr
 		}
 	}
 
-	Camera::Camera() {}
-
 	Camera::Camera(const aiCamera *cam)
 	{
 		aspectRatio = cam->mAspect;
@@ -35,8 +33,6 @@ namespace acr
 		aiVector3D center = cam->mLookAt;
 		globalTransform = math::lookAt(getVec3(eye), getVec3(center), getVec3(up));
 	}
-
-	Scene::Scene() {}
 
 	Scene::Scene(const Scene::Args &args)
 	{
@@ -55,7 +51,6 @@ namespace acr
 		//DoTheSceneProcessing( scene);
 		loadScene(scene);
 
-		cudaMemcpyToSymbol(&devScene, this, sizeof(Scene));
 		//Flush scene
 		//objects.flushToDevice();
 		//materials.flushToDevice();
@@ -190,7 +185,7 @@ namespace acr
 		bool intersected = false;
 		for (int i = 0; i < objects.size(); i++)
 		{
-			intersected = objects[i].intersect(r, info);
+			intersected = objects[i].intersect(r, info,meshes);
 		}
 		return intersected;
 	}
@@ -255,7 +250,7 @@ namespace acr
 		meshes = vector<int>(thrust::host_vector<int>(node->mMeshes, node->mMeshes + node->mNumMeshes));
 	}
 
-	bool Object::intersect(const Ray &r, HitInfo &info)
+	bool Object::intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshMap)
 	{
 		Ray lr;
 		lr.o = math::vec3(globalInverseTransform * math::vec4(r.o, 1.0));
@@ -265,7 +260,7 @@ namespace acr
 		bool intersected = false;
 		for (int i = 0; i < meshes.size(); i++)
 		{
-			intersected = devScene.meshes[meshes[i]].intersect(r, info);
+			intersected = meshMap[meshes[i]].intersect(r, info);
 		}
 
 		// transform to world space
