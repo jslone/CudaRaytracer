@@ -8,9 +8,6 @@
 
 namespace acr
 {
-	__constant__
-	Scene devScene;
-
 	inline math::vec3 getVec3(aiVector3D aivec)
 	{
 		return math::vec3(aivec.x, aivec.y, aivec.z);

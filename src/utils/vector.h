@@ -38,6 +38,9 @@ namespace acr
 
 		__device__ __host__
 		void clear();
+		
+		__host__
+		void free();
 	private:
 		T *devPtr;
 		size_t devSize;
@@ -56,9 +59,7 @@ namespace acr
 	vector<T>::vector(vector<T> &v)
 		: devPtr(v.devPtr)
 		, devSize(v.devSize)
-	{
-		v.clear();
-	}
+	{}
 
 	template<typename T>
 	vector<T>::vector(const thrust::host_vector<T> &h)
@@ -72,15 +73,8 @@ namespace acr
 	}
 
 	template<typename T>
-	vector<T>::~vector()
-	{
-#ifndef __CUDA_ARCH__
-		if(devPtr)
-			cudaFree(devPtr);
-		clear();
-#endif
-	}
-	
+	vector<T>::~vector() {}
+
 	template<typename T>
 	T& vector<T>::operator[] (size_t pos)
 	{
@@ -97,6 +91,14 @@ namespace acr
 	size_t vector<T>::size()
 	{
 		return devSize;
+	}
+	
+	template<typename T>
+	void vector<T>::free()
+	{
+		if(devPtr)
+			cudaFree(devPtr);
+		clear();
 	}
 	
 	template<typename T>
