@@ -9,7 +9,6 @@ namespace acr
 		, scene(args.scene)
 		, frameRate(args.frameRate)
 	{
-
 		SDL_Init(0);
 		SDL_InitSubSystem(SDL_INIT_TIMER | SDL_INIT_EVENTS);
 		atexit(SDL_Quit);
@@ -21,6 +20,7 @@ namespace acr
 	void Application::start()
 	{
 		running = true;
+		renderer.loadScene(scene);
 		run();
 	}
 

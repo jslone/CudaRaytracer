@@ -80,7 +80,7 @@ namespace acr
 		std::unordered_map<std::string,int> lightMap;
 		thrust::host_vector<Light> hLights(scene->mNumLights);
 		loadLights(scene,hLights,lightMap);
-		printf("Successfully loaded %d light(s).\n", lights.size());
+		printf("Successfully loaded %d light(s).\n", hLights.size());
 		//Load materials
 		loadMaterials(scene);
 		printf("Successfully loaded %d material(s).\n", materials.size());
@@ -92,13 +92,10 @@ namespace acr
 		//Load object hierarchy
 		loadObjects(scene,camName,lightMap,hLights);
 		printf("Successfully loaded hierarchy.\n");
-
+		
 		lights = vector<Light>(hLights);
 
-		for (int i = 0; i < objects.size(); i++)
-		{
-			printf("Object[%d]: %s\n", i, objects[i].name);
-		}
+		printf("Done loading.");
 	}
 
 	__host__
