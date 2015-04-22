@@ -76,6 +76,7 @@ namespace acr
 	
 	class Scene
 	{
+	friend class Object;
 	public:
 		struct Args
 		{
