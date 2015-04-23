@@ -7,6 +7,7 @@ namespace acr
 {
 	class SDL
 	{
+	public:
 		SDL() { SDL_Init(0); }
 		~SDL() { SDL_Quit(); }
 	};

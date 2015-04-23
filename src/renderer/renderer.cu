@@ -25,15 +25,14 @@ namespace acr
 		}
 
 		window = SDL_CreateWindow(title, args.pos.x, args.pos.y,
-								  dim.x, dim.y, 0);
+								  dim.x, dim.y, SDL_WINDOW_OPENGL);
 		if (window == nullptr)
 		{
 			std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
-		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED
-		                                        | SDL_RENDERER_PRESENTVSYNC);
+		renderer = SDL_CreateRenderer(window, -1, 0);
 		if (renderer == nullptr)
 		{
 			std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
