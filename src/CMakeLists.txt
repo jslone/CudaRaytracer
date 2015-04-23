@@ -27,7 +27,7 @@ link_libraries(
 find_package(CUDA QUIET REQUIRED)
 
 set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-std=c++11 -O3 -gencode arch=compute_20,code=sm_20")
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-std=c++11 -O3 -gencode arch=compute_30,code=sm_30")
 
 include_directories(${CUDA_INCLUDE_DIRS})
 

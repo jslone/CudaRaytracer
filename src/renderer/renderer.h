@@ -15,17 +15,21 @@ namespace acr
 		struct Args
 		{
 			const char *title;
-			math::vec2 pos, dim;
+			math::u32vec2 pos, dim;
 		};
 
 		Renderer(const Args &args);
 		~Renderer();
 
 		void loadScene(const Scene &scene);
+
 		void render();
 	private:
 		SDL_Window *window;
 		SDL_Renderer *renderer;
+
+		const char *title;
+		math::u32vec2 dim;
 	};
 
 } // namespace acr

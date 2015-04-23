@@ -1,6 +1,7 @@
 #ifndef _GEOMETRY_H_
 #define _GEOMETRY_H_
 
+#include "assimp/mesh.h"
 #include "math/math.h"
 #include "materials/materials.h"
 #include "utils/vector.h"
@@ -40,15 +41,20 @@ namespace acr
 	};
 
 
-	class Mesh : Shape
+	class Mesh
 	{
 	public:
-		Mesh(float *positions, float *normals, float *colors, uint32_t *indices, uint32_t numVertices, uint32_t numFaces);
-		Mesh();
+
+		__host__ __device__
+		Mesh() = default;
+		
+		__host__
+		Mesh(const aiMesh *aiMesh);
+
+		__host__ __device__
 		~Mesh();
 
-		virtual bool intersect(const Ray &r, HitInfo &info);
-		void flushToDevice();
+		bool intersect(const Ray &r, HitInfo &info);
 	private:
 		vector<Vertex>  vertices;
 		vector<Face>    faces;

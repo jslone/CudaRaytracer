@@ -4,32 +4,36 @@
 
 namespace acr
 {
-	Mesh::Mesh() {}
-
-	Mesh::Mesh(float *positions, float *normals, float *colors, uint32_t *indices, uint32_t numVertices, uint32_t numFaces)
-		: vertices(numVertices)
-		, faces(numFaces)
+	__host__
+	Mesh::Mesh(const aiMesh *aiMesh)
 	{
-
-		for (uint32_t i = 0; i < numVertices; i++)
+		thrust::host_vector<Vertex> vs(aiMesh->mNumVertices);
+		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
 		{
 			for (uint32_t j = 0; j < 3; j++)
 			{
-				vertices[i].position[j] = positions[3 * i + j];
-				vertices[i].normal[j] = normals[3 * i + j];
-				vertices[i].color[j] = colors ? colors[4 * i + j] : 1.0f;
+				vs[i].position[j] = aiMesh->mVertices[i][j];
+				vs[i].normal[j] = aiMesh->mNormals[i][j];
+				vs[i].color[j] = aiMesh->mColors[0] ? aiMesh->mColors[0][i][j] : 1.0f;
 			}
 		}
+		vertices = vector<Vertex>(vs);
 
-		for (uint32_t i = 0; i < numFaces; i++)
+		thrust::host_vector<Face> f(aiMesh->mNumFaces);
+		for (uint32_t i = 0; i < aiMesh->mNumFaces; i++)
 		{
 			for (uint32_t j = 0; j < 3; j++)
 			{
-				faces[i].indices[j] = indices[3 * i + j];
+				f[i].indices[j] = aiMesh->mFaces[i].mIndices[j];
 			}
 		}
+		faces = vector<Face>(f);
 	}
+	
+	__host__
+	Mesh::~Mesh() {}
 
+	__host__
 	bool Mesh::intersect(const Ray &r, HitInfo &info)
 	{
 		bool intersected = false;
@@ -63,12 +67,6 @@ namespace acr
 			}
 		}
 		return intersected;
-	}
-
-	void Mesh::flushToDevice()
-	{
-		vertices.flushToDevice();
-		faces.flushToDevice();
 	}
 
 } // namespace acr

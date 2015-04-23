@@ -10,29 +10,35 @@
 namespace acr
 {
 
-	class Object : Shape
+	class Object
 	{
 	public:
-		virtual bool intersect(const Ray &r, HitInfo &info);
+		Object() = default;
+		Object(const aiNode *node, int index, Object *parent);
+		Object(const Object &obj);
+		Object(Object &obj);
 
-		int meshIndex;
-		int numChildren;
+		char name[16];
 		int index;
 		int parentIndex;
-		std::string name;
-		Object* parent;
-		Object** children;
+		
+		vector<int> children;
+		vector<int> meshes;
 		math::mat4 globalTransform;
 		math::mat4 localTransform;
 		math::mat4 globalNormalTransform;
 
 		math::mat4 globalInverseTransform;
 		math::mat4 globalInverseNormalTransform;
+		
+		bool intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshes);
 	};
 
 	class Camera
 	{
 	public:
+		Camera() = default;
+		Camera(const aiCamera *camera);
 		float aspectRatio;
 		float horizontalFOV;
 		math::mat4 globalTransform;
@@ -41,82 +47,67 @@ namespace acr
 	class Light
 	{
 	public:
-		float attConstant;
-		float attLinear;
-		float attQuadratic;
+		Light() = default;
+		Light(const aiLight *aiLight);
+		
+		enum Type
+		{
+			POINT,
+			DIRECTIONAL,
+			SPOT
+		};
+		
+		Type type;
+		
 		Color3 ambient;
 		Color3 diffuse;
 		Color3 specular;
+
 		math::vec3 position;
-
-		virtual float getFlux(math::vec3 position) = 0;
-	};
-
-	class DirectionalLight : public Light
-	{
-	public:
 		math::vec3 direction;
 
-		virtual float getFlux(math::vec3 position)
-		{
-			return 0;
-		}
-	};
+		float attConstant;
+		float attLinear;
+		float attQuadratic;
 
-	class PointLight : public Light
-	{
-	public:
-		virtual float getFlux(math::vec3 position)
-		{
-			return 0;
-		}
-	};
-
-	class SpotLight : public Light
-	{
-	public:
 		float innerConeAngle;
 		float outerConeAngle;
-		math::vec3 direction;
-
-		virtual float getFlux(math::vec3 position)
-		{
-			return 0;
-		}
+		
+		float getFlux(math::vec3 position);
 	};
-
-	class Scene : Shape
+	
+	class Scene
 	{
+	friend class Object;
 	public:
 		struct Args
 		{
 			const char* filePath;
 		};
 
+		Scene() = default;
 		Scene(const Args &args);
 		~Scene();
 
-		virtual bool intersect(const Ray& r, HitInfo &info);
+		bool intersect(const Ray& r, HitInfo &info);
 	private:
-		std::unordered_map<std::string, Light*> light_map;
-		std::unordered_map<std::string, Camera*> camera_map;
 		void loadScene(const aiScene* scene);
-		Object* loadObject(aiNode* node, Object* parent);
-		Light** loadLights(const aiScene* scene);
-		Material* loadMaterials(const aiScene* scene);
-		Camera loadCamera(aiCamera* cam);
-		Mesh* loadMeshes(const aiScene* scene);
-		void getMathMatrix(aiMatrix4x4& aiMatrix, math::mat4& mathMat);
-		Object* rootObject;
-		Object* objects;      //Vector<Object> objects;
+		void loadLights(const aiScene* scene, thrust::host_vector<Light> &hLights, std::unordered_map<std::string,int> &lightMap);
+		void loadMaterials(const aiScene* scene);
+		void loadCamera(const aiScene *scene, std::string &camName);
+		void loadMeshes(const aiScene* scene);
+		void loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights);
+
+		int loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &name, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights);
+
+		vector<Object>		objects;
+		vector<Material>	materials;
+		vector<Mesh>		meshes;
+		vector<Light>		lights;
+		
+		int rootIndex;
 		Camera camera;
-		Light** lights;       //Make vector?
-		Material* materials;  //Vector<Material> materials;
-		Mesh* meshes;         //Vector<Mesh> meshes;
-		int numLights;
-		int numMaterials;
-		int numMeshes;
-		int numObjects;
+	
 	};
 
 } // namespace acr

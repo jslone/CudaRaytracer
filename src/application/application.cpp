@@ -5,14 +5,12 @@ namespace acr
 {
 
 	Application::Application(const Args args)
-		: renderer(args.renderer)
+		: sdl() 
+		,	renderer(args.renderer)
 		, scene(args.scene)
 		, frameRate(args.frameRate)
 	{
-
-		SDL_Init(0);
 		SDL_InitSubSystem(SDL_INIT_TIMER | SDL_INIT_EVENTS);
-		atexit(SDL_Quit);
 	}
 
 	Application::~Application()
@@ -20,7 +18,9 @@ namespace acr
 
 	void Application::start()
 	{
+		std::cout << "Starting application..." << std::endl;
 		running = true;
+		renderer.loadScene(scene);
 		run();
 	}
 
