@@ -11,7 +11,7 @@ We experienced quite a few challenges in getting to our desired checkpoint.  We 
 ## Data Structures
 We moved the mesh data (vertices, edges, faces) from the Assimp library's format into a CUDA host vector so we could easily flush it onto the device.
 
-## Simply Raytracer
+## Simple Raytracer
 We then plugged in code from a simply raytracer kernel that Jacob had built for Graphics just to get a running, functional raytracer that we could then optimize and analyze with our data structures and improved algorithms. 
  
 
