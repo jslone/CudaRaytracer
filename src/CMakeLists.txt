@@ -14,19 +14,20 @@ add_subdirectory(libs/assimp)
 add_subdirectory(libs/glew/build/cmake)
 
 include_directories(
-  ${CMAKE_SOURCE_DIR}/libs/sdl2/include
+	${CMAKE_SOURCE_DIR}/libs/sdl2/include
 	${CMAKE_SOURCE_DIR}/libs/glm/glm
-  ${CMAKE_SOURCE_DIR}/libs/assimp/include
+	${CMAKE_SOURCE_DIR}/libs/assimp/include
+	${CMAKE_SOURCE_DIR}/libs/glew/include
 	${CMAKE_SOURCE_DIR}
 )
 
 find_package(OpenGL QUIET REQUIRED)
 
 link_libraries(
-  SDL2
-  assimp
-  glew
-  ${OPENGL_LIBRARIES}
+	SDL2
+	assimp
+	glew
+	${OPENGL_LIBRARIES}
 )
 
 find_package(CUDA QUIET REQUIRED)
@@ -43,11 +44,11 @@ add_subdirectory(scene)
 link_libraries(scene)
 
 add_subdirectory(
-  renderer
+	renderer
 )
 
 link_libraries(
-  renderer
+	renderer
 )
 
 add_subdirectory(application)

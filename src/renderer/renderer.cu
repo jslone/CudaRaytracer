@@ -1,7 +1,7 @@
+#include "renderer.h"
 #include <cstring>
 #include <iostream>
 #include <cuda_gl_interop.h>
-#include "renderer.h"
 
 namespace acr
 {
@@ -43,6 +43,7 @@ namespace acr
 		}
 
 		// open gl initialization
+		glCtx = SDL_GL_CreateContext(window);
 		
 		/* Set the clear color. */
 		glClearColor( 0, 0, 0, 0 );
@@ -103,7 +104,7 @@ namespace acr
 
 		// setup texture
 		glEnable(GL_TEXTURE_2D);
-		glGenTexture(&textureId);
+		glGenTextures(1,&textureId);
 		
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
@@ -165,7 +166,7 @@ namespace acr
 
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
-		glTexSubImage(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA32F, GL_FLOAT, nullptr);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA32F, GL_FLOAT, nullptr);
 
 		// draw fullscreen quad
 		glBegin(GL_QUADS);
@@ -180,7 +181,7 @@ namespace acr
 		glEnd();
 		
 		// swap buffers
-		SDL_GL_SwapBuffers();
+		SDL_GL_SwapWindow(window);
 	}
 
 }
