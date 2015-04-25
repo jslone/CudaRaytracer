@@ -30,6 +30,9 @@ namespace acr
 
 		const char *title;
 		math::u32vec2 dim;
+
+		GLuint drawBuffer;
+		GLuint textureId;
 	};
 
 } // namespace acr

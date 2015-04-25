@@ -19,9 +19,12 @@ include_directories(
 	${CMAKE_SOURCE_DIR}
 )
 
+find_package(OpenGL QUIET REQUIRED)
+
 link_libraries(
   SDL2
   assimp
+	${OPENGL_LIBRARIES}
 )
 
 find_package(CUDA QUIET REQUIRED)
