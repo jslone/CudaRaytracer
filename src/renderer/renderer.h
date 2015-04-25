@@ -2,6 +2,13 @@
 #define _RENDERER_H_
 
 #include "SDL.h"
+
+
+#define GL_GLEXT_PROTOTYPES 1
+#define GL3_PROTOTYPES 1
+#include <GL/gl.h>
+#include <GL/glu.h>
+
 #include "math/math.h"
 #include "scene/scene.h"
 

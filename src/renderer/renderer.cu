@@ -1,7 +1,6 @@
 #include <cstring>
 #include <iostream>
-#include <gl/gl.h>
-#include <gl/glu.h>
+#include <cuda_gl_interop.h>
 #include "renderer.h"
 
 namespace acr
@@ -49,7 +48,7 @@ namespace acr
 		glClearColor( 0, 0, 0, 0 );
 
 		/* Setup our viewport. */
-		glViewport( 0, 0, width, height );
+		glViewport( 0, 0, dim.x, dim.y );
 		
 		/* Setup the projection and world matrix */
 		glMatrixMode( GL_PROJECTION );
@@ -67,7 +66,7 @@ namespace acr
 		if(cudaErr != cudaSuccess)
 		{
 			std::cout << "cudaGLGetDevices: ";
-			switch(err)
+			switch(cudaErr)
 			{
 				case cudaErrorNoDevice:
 					std::cout << "No device found." << std::endl;
@@ -82,7 +81,7 @@ namespace acr
 		if(cudaErr != cudaSuccess)
 		{
 			std::cout << "cudaGLSetGLDevice: ";
-			switch(err)
+			switch(cudaErr)
 			{
 				case cudaErrorInvalidDevice:
 					std::cout << "Invalid device." << std::endl;
@@ -144,7 +143,7 @@ namespace acr
 		int y = blockIdx.y * gridDim.y + threadIdx.y;
 		int sample = blockIdx.z * gridDim.z + threadIdx.z;
 
-		devParams.screen[x + devParams.width * y] = math::Color4(0,0,0,1);
+		devParams.screen[x + devParams.width * y] = Color4(0,0,0,1);
 	}
 
 	void Renderer::render()
@@ -166,7 +165,7 @@ namespace acr
 
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
-		glTexSubImage(GL_TEXTURE_2D, 0, 0, 0, Width, Height, GL_RGBA32F, GL_FLOAT, nullptr);
+		glTexSubImage(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA32F, GL_FLOAT, nullptr);
 
 		// draw fullscreen quad
 		glBegin(GL_QUADS);
