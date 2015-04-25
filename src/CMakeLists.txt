@@ -11,6 +11,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(libs/glm)
 add_subdirectory(libs/sdl2)
 add_subdirectory(libs/assimp)
+add_subdirectory(libs/glew/build/cmake)
 
 include_directories(
   ${CMAKE_SOURCE_DIR}/libs/sdl2/include
@@ -19,9 +20,13 @@ include_directories(
 	${CMAKE_SOURCE_DIR}
 )
 
+find_package(OpenGL QUIET REQUIRED)
+
 link_libraries(
   SDL2
   assimp
+  glew
+  ${OPENGL_LIBRARIES}
 )
 
 find_package(CUDA QUIET REQUIRED)

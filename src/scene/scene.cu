@@ -95,7 +95,7 @@ namespace acr
 		
 		lights = vector<Light>(hLights);
 
-		printf("Done loading.");
+		printf("Done loading.\n");
 	}
 
 	__host__

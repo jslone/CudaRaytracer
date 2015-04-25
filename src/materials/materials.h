@@ -7,6 +7,7 @@
 namespace acr
 {
 	typedef math::vec3 Color3;
+	typedef math::vec4 Color4;
 
 	class Material
 	{

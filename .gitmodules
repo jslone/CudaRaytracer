@@ -7,3 +7,6 @@
 [submodule "src/libs/assimp"]
 	path = src/libs/assimp
 	url = https://github.com/jslone/assimp.git
+[submodule "src/libs/glew"]
+	path = src/libs/glew
+	url = https://github.com/nigels-com/glew.git

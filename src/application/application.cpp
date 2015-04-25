@@ -10,7 +10,10 @@ namespace acr
 		, scene(args.scene)
 		, frameRate(args.frameRate)
 	{
-		SDL_InitSubSystem(SDL_INIT_TIMER | SDL_INIT_EVENTS);
+		if(SDL_InitSubSystem(SDL_INIT_TIMER | SDL_INIT_EVENTS))
+		{
+			std::cout << "SDL_InitSubSystem error: " << SDL_GetError() << std::endl;
+		}
 	}
 
 	Application::~Application()
@@ -48,7 +51,7 @@ namespace acr
 			int32_t sleepTime = period - deltaTime - lagTime;
 			int32_t wakeTime = endTime + sleepTime;
 
-			//std::cout << "deltaTime: " << endTime - lastTick << std::endl;
+			std::cout << "deltaTime: " << endTime - lastTick << std::endl;
 
 			// Update last tick so we know when this frame ended
 			lastTick = endTime;
