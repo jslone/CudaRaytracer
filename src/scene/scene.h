@@ -41,7 +41,7 @@ namespace acr
 		Camera(const aiCamera *camera);
 		float aspectRatio;
 		float horizontalFOV;
-		math::mat4 globalTransform;
+		math::vec3 position,forward,up;
 	};
 
 	class Light

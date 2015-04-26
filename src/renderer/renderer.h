@@ -8,6 +8,8 @@
 
 #include <SDL.h>
 
+#include <curand.h>
+
 #include "math/math.h"
 #include "scene/scene.h"
 
@@ -21,7 +23,8 @@ namespace acr
 		struct Args
 		{
 			const char *title;
-			math::u32vec2 pos, dim;
+			math::u32vec2 pos;
+			math::u32vec3 dim;
 		};
 
 		Renderer(const Args &args);
@@ -36,10 +39,13 @@ namespace acr
 		SDL_GLContext glCtx;
 
 		const char *title;
-		math::u32vec2 dim;
+		math::u32vec3 dim;
 
 		GLuint drawBuffer;
 		GLuint textureId;
+
+		state *cuRandState;
+
 	};
 
 } // namespace acr

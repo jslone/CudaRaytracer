@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iostream>
 #include <cuda_gl_interop.h>
+#include <curand.h>
 
 namespace acr
 {
@@ -10,7 +11,7 @@ namespace acr
 		Scene *scene;
 		Color4 *screen;
 		char sceneData[sizeof(Scene)];
-		uint32_t width,height;
+		uint32_t width,height,samples;
 	};
 
 	__constant__
@@ -98,7 +99,7 @@ namespace acr
 
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, drawBuffer);
 
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, dim.x * dim.y * sizeof(Color4), NULL, GL_DYNAMIC_COPY);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, dim.x * dim.y * dim.z * sizeof(Color4), NULL, GL_DYNAMIC_COPY);
 
 		cudaGLRegisterBufferObject(drawBuffer);
 
@@ -112,6 +113,8 @@ namespace acr
 
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+
+		cudaMalloc((void**)&cuRandState, sizeof(state) * dim.x * dim.y);
 	}
 
 	Renderer::~Renderer()
@@ -133,18 +136,52 @@ namespace acr
 		std::memcpy(params.sceneData, &scene, sizeof(Scene));
 		params.width = dim.x;
 		params.height = dim.y;
+		params.samples = dim.z;
 
 		cudaMemcpyToSymbol(&devParams, &params, sizeof(DevParams));
 	}
 
 	__global__
-	void scatterTrace()
+	void scatterTrace(currentState *randState, unsigned long seed)
 	{
+		
 		int x = blockIdx.x * gridDim.x + threadIdx.x;
 		int y = blockIdx.y * gridDim.y + threadIdx.y;
 		int sample = blockIdx.z * gridDim.z + threadIdx.z;
+		int index = sample + samples * x + (samples * width) * y;
+		
+		devParams.screen[x + devParams.width * y] = Color4(0,0,0,0);
+		
+		curand_init(seed,index,0,&randState[index]);
 
-		devParams.screen[x + devParams.width * y] = Color4(0,0,0,1);
+		Scene *scene = devParams.scene;
+
+		float dx = 1.0f / devParams.width;
+		float dy = 1.0f / devParams.height;
+		
+		float i = 2.0f*(float(x)+curand_uniform(randState[index]))*dx - 1.0f;
+    float j = 2.0f*(float(y)+curand_uniform(randState[index]))*dy - 1.0f;
+
+		
+		Ray r;
+		r.o = math::vec3(scene->camera.globalTransform * math::vector4(0,0,0,1));
+		r.d = Ray::get_pixel_dir(scene->camera, i, j);
+		 
+		HitInfo info;
+		Color4 contribution;
+		if(scene->intersect(r,info))
+		{
+			contribution = scene->materials[info.materialIndex].diffuse;
+		}
+		else
+		{
+			contribution = Color4(0,0,0,1);
+		}
+		
+		for(int i = 0; i < 4; i++)
+		{
+			atomicAdd(&devParams.screen[x + devParams.width * y][i], contribution[i] / devParams.samples);
+		}
 	}
 
 	void Renderer::render()
@@ -154,7 +191,7 @@ namespace acr
 		
 		// call kernel to render pixels then draw to screen
 		dim3 block(4,4,16);
-		dim3 grid(dim.x / block.x, dim.y / block.y, 1);
+		dim3 grid(dim.x / block.x, dim.y / block.y, dim.z / block.z);
 		
 		scatterTrace<<<grid,block>>>();
 		
