@@ -8,11 +8,6 @@
 
 namespace acr
 {
-	inline math::vec3 getVec3(aiVector3D aivec)
-	{
-		return math::vec3(aivec.x, aivec.y, aivec.z);
-	}
-
 	inline void getMathMatrix(const aiMatrix4x4& aiMatrix, math::mat4& mathMat)
 	{
 		for (int i = 0; i < 4; i++)
@@ -22,15 +17,6 @@ namespace acr
 				mathMat[i][j] = aiMatrix[j][i];
 			}
 		}
-	}
-
-	Camera::Camera(const aiCamera *cam)
-	{
-		aspectRatio = cam->mAspect;
-		horizontalFOV = cam->mHorizontalFOV;
-		position = getVec3(cam->mPosition);
-		up = getVec3(cam->mUp);
-		forward = math::normalize(getVec3(cam->mLookAt) - position);
 	}
 
 	Scene::Scene(const Scene::Args &args)

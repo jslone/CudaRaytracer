@@ -2,7 +2,6 @@
 #include <cstring>
 #include <iostream>
 #include <cuda_gl_interop.h>
-#include <curand.h>
 
 namespace acr
 {
@@ -114,7 +113,7 @@ namespace acr
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 
-		cudaMalloc((void**)&cuRandState, sizeof(state) * dim.x * dim.y);
+		cudaMalloc((void**)&cuRandStates, sizeof(curandState) * dim.x * dim.y * dim.z);
 	}
 
 	Renderer::~Renderer()
@@ -142,9 +141,12 @@ namespace acr
 	}
 
 	__global__
-	void scatterTrace(currentState *randState, unsigned long seed)
+	void scatterTrace(curandState *randState, unsigned long seed)
 	{
-		
+		const int width = devParams.width;
+		const int height = devParams.height;
+		const int samples = devParams.samples;
+
 		int x = blockIdx.x * gridDim.x + threadIdx.x;
 		int y = blockIdx.y * gridDim.y + threadIdx.y;
 		int sample = blockIdx.z * gridDim.z + threadIdx.z;
@@ -159,19 +161,19 @@ namespace acr
 		float dx = 1.0f / devParams.width;
 		float dy = 1.0f / devParams.height;
 		
-		float i = 2.0f*(float(x)+curand_uniform(randState[index]))*dx - 1.0f;
-    float j = 2.0f*(float(y)+curand_uniform(randState[index]))*dy - 1.0f;
+		float i = 2.0f*(float(x)+curand_uniform(&randState[index]))*dx - 1.0f;
+    float j = 2.0f*(float(y)+curand_uniform(&randState[index]))*dy - 1.0f;
 
 		
 		Ray r;
-		r.o = math::vec3(scene->camera.globalTransform * math::vector4(0,0,0,1));
+		r.o = scene->camera.position;
 		r.d = Ray::get_pixel_dir(scene->camera, i, j);
 		 
 		HitInfo info;
 		Color4 contribution;
 		if(scene->intersect(r,info))
 		{
-			contribution = scene->materials[info.materialIndex].diffuse;
+			contribution = Color4(scene->materials[info.materialIndex].diffuse,1);
 		}
 		else
 		{
@@ -193,7 +195,7 @@ namespace acr
 		dim3 block(4,4,16);
 		dim3 grid(dim.x / block.x, dim.y / block.y, dim.z / block.z);
 		
-		scatterTrace<<<grid,block>>>();
+		scatterTrace<<<grid,block>>>(cuRandStates,SDL_GetTicks());
 		
 		// unbind draw buffer so openGL can use
 		cudaGLUnmapBufferObject(drawBuffer);

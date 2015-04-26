@@ -4,6 +4,7 @@
 #include "assimp/mesh.h"
 #include "math/math.h"
 #include "materials/materials.h"
+#include "scene/camera.h"
 #include "utils/vector.h"
 
 namespace acr
@@ -25,9 +26,8 @@ namespace acr
 	{
 		math::vec3 o;
 		math::vec3 d;
-		
-		static math::vec3 get_pixel_dir(int x, int y);
-		static void init(const Camera& camera);
+		__device__ __host__
+		static math::vec3 get_pixel_dir(const Camera& camera, int x, int y);
 	};
 
 	struct HitInfo
@@ -57,6 +57,7 @@ namespace acr
 		__host__ __device__
 		~Mesh();
 
+		__host__ __device__
 		bool intersect(const Ray &r, HitInfo &info);
 	private:
 		vector<Vertex>  vertices;

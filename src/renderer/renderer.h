@@ -9,9 +9,12 @@
 #include <SDL.h>
 
 #include <curand.h>
+#include <curand_kernel.h>
 
 #include "math/math.h"
 #include "scene/scene.h"
+
+typedef curandState curandState_t;
 
 namespace acr
 {
@@ -44,7 +47,7 @@ namespace acr
 		GLuint drawBuffer;
 		GLuint textureId;
 
-		state *cuRandState;
+		curandState *cuRandStates;
 
 	};
 

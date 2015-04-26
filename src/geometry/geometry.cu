@@ -25,10 +25,9 @@ namespace acr
 		pos = camera.position;
 		dist = math::tan(camera.horizontalFOV/2.0);
 		
-		return math::normalize(dir + dist*(nj*cU + AR*ni*cR));
+		return math::normalize(dir + dist*(float(nj)*cU + AR*float(ni)*cR));
 	}
 
-	__host__
 	Mesh::Mesh(const aiMesh *aiMesh)
 	{
 		thrust::host_vector<Vertex> vs(aiMesh->mNumVertices);
@@ -54,10 +53,8 @@ namespace acr
 		faces = vector<Face>(f);
 	}
 	
-	__host__
 	Mesh::~Mesh() {}
 
-	__host__
 	bool Mesh::intersect(const Ray &r, HitInfo &info)
 	{
 		bool intersected = false;
