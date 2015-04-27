@@ -26,8 +26,6 @@ namespace acr
 	{
 		math::vec3 o;
 		math::vec3 d;
-		__device__ __host__
-		static math::vec3 get_pixel_dir(const Camera& camera, int x, int y);
 	};
 
 	struct HitInfo

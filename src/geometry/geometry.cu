@@ -5,29 +5,6 @@
 namespace acr
 {
 	
-	math::vec3 Ray::get_pixel_dir(const Camera &camera, int ni, int nj)
-	{
-
-		math::vec3 dir;
-		math::vec3 up;
-		float AR;
-
-		math::vec3 cR;
-		math::vec3 cU;
-		float dist;
-		math::vec3 pos;
-    
-		dir = camera.forward;
-		up = camera.up;
-		AR = camera.aspectRatio;
-		cR = math::cross(dir, up);
-		cU = math::cross(cR, dir);
-		pos = camera.position;
-		dist = math::tan(camera.horizontalFOV/2.0);
-		
-		return math::normalize(dir + dist*(float(nj)*cU + AR*float(ni)*cR));
-	}
-
 	Mesh::Mesh(const aiMesh *aiMesh)
 	{
 		thrust::host_vector<Vertex> vs(aiMesh->mNumVertices);

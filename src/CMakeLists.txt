@@ -35,22 +35,15 @@ link_libraries(
 find_package(CUDA QUIET REQUIRED)
 
 set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-std=c++11 -O3 -gencode arch=compute_30,code=sm_30")
+set(CUDA_SEPARABLE_COMPILATION ON)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-std=c++11 -O3")
 
 include_directories(${CUDA_INCLUDE_DIRS})
 
-add_subdirectory(geometry)
-link_libraries(geometry)
-
-add_subdirectory(scene)
-link_libraries(scene)
-
-add_subdirectory(
-	renderer
+cuda_add_executable(application
+	${CMAKE_SOURCE_DIR}/renderer/renderer.cu
+	${CMAKE_SOURCE_DIR}/scene/scene.cu
+	${CMAKE_SOURCE_DIR}/geometry/geometry.cu
+	${CMAKE_SOURCE_DIR}/materials/materials.cpp
+	${CMAKE_SOURCE_DIR}/application/application.cpp
 )
-
-link_libraries(
-	renderer
-)
-
-add_subdirectory(application)

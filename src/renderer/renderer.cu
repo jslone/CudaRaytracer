@@ -140,6 +140,30 @@ namespace acr
 		cudaMemcpyToSymbol(&devParams, &params, sizeof(DevParams));
 	}
 
+	__device__ __host__
+	math::vec3 get_pixel_dir(const Camera &camera, int ni, int nj)
+	{
+
+		math::vec3 dir;
+		math::vec3 up;
+		float AR;
+
+		math::vec3 cR;
+		math::vec3 cU;
+		float dist;
+		math::vec3 pos;
+    
+		dir = camera.forward;
+		up = camera.up;
+		AR = camera.aspectRatio;
+		cR = math::cross(dir, up);
+		cU = math::cross(cR, dir);
+		pos = camera.position;
+		dist = math::tan(camera.horizontalFOV/2.0);
+		
+		return math::normalize(dir + dist*(float(nj)*cU + AR*float(ni)*cR));
+	}
+
 	__global__
 	void scatterTrace(curandState *randState, unsigned long seed)
 	{
@@ -162,12 +186,12 @@ namespace acr
 		float dy = 1.0f / devParams.height;
 		
 		float i = 2.0f*(float(x)+curand_uniform(&randState[index]))*dx - 1.0f;
-    float j = 2.0f*(float(y)+curand_uniform(&randState[index]))*dy - 1.0f;
+		float j = 2.0f*(float(y)+curand_uniform(&randState[index]))*dy - 1.0f;
 
 		
 		Ray r;
 		r.o = scene->camera.position;
-		r.d = Ray::get_pixel_dir(scene->camera, i, j);
+		r.d = get_pixel_dir(scene->camera, i, j);
 		 
 		HitInfo info;
 		Color4 contribution;
