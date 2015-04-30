@@ -1,16 +1,20 @@
 #ifndef _RENDERER_H_
 #define _RENDERER_H_
 
-#include "SDL.h"
 
-
-#define GL_GLEXT_PROTOTYPES 1
-#define GL3_PROTOTYPES 1
+#include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
 
+#include <SDL.h>
+
+#include <curand.h>
+#include <curand_kernel.h>
+
 #include "math/math.h"
 #include "scene/scene.h"
+
+typedef curandState curandState_t;
 
 namespace acr
 {
@@ -22,7 +26,8 @@ namespace acr
 		struct Args
 		{
 			const char *title;
-			math::u32vec2 pos, dim;
+			math::u32vec2 pos;
+			math::u32vec3 dim;
 		};
 
 		Renderer(const Args &args);
@@ -34,12 +39,16 @@ namespace acr
 	private:
 		SDL_Window *window;
 		SDL_Renderer *renderer;
+		SDL_GLContext glCtx;
 
 		const char *title;
-		math::u32vec2 dim;
+		math::u32vec3 dim;
 
 		GLuint drawBuffer;
 		GLuint textureId;
+
+		curandState *cuRandStates;
+
 	};
 
 } // namespace acr

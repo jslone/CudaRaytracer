@@ -4,7 +4,7 @@
 
 namespace acr
 {
-	__host__
+	
 	Mesh::Mesh(const aiMesh *aiMesh)
 	{
 		thrust::host_vector<Vertex> vs(aiMesh->mNumVertices);
@@ -30,10 +30,8 @@ namespace acr
 		faces = vector<Face>(f);
 	}
 	
-	__host__
 	Mesh::~Mesh() {}
 
-	__host__
 	bool Mesh::intersect(const Ray &r, HitInfo &info)
 	{
 		bool intersected = false;

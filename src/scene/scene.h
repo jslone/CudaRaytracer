@@ -4,6 +4,8 @@
 #include "assimp/scene.h"
 #include "geometry/geometry.h"
 #include "math/math.h"
+#include "camera.h"
+
 #include <unordered_map>
 #include <string>
 
@@ -31,17 +33,8 @@ namespace acr
 		math::mat4 globalInverseTransform;
 		math::mat4 globalInverseNormalTransform;
 		
+		__host__ __device__
 		bool intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshes);
-	};
-
-	class Camera
-	{
-	public:
-		Camera() = default;
-		Camera(const aiCamera *camera);
-		float aspectRatio;
-		float horizontalFOV;
-		math::mat4 globalTransform;
 	};
 
 	class Light
@@ -89,6 +82,7 @@ namespace acr
 		Scene(const Args &args);
 		~Scene();
 
+		__host__ __device__
 		bool intersect(const Ray& r, HitInfo &info);
 	private:
 		void loadScene(const aiScene* scene);
@@ -99,7 +93,7 @@ namespace acr
 		void loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights);
 
 		int loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &name, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights);
-
+	public:
 		vector<Object>		objects;
 		vector<Material>	materials;
 		vector<Mesh>		meshes;

@@ -4,6 +4,7 @@
 #include "assimp/mesh.h"
 #include "math/math.h"
 #include "materials/materials.h"
+#include "scene/camera.h"
 #include "utils/vector.h"
 
 namespace acr
@@ -54,6 +55,7 @@ namespace acr
 		__host__ __device__
 		~Mesh();
 
+		__host__ __device__
 		bool intersect(const Ray &r, HitInfo &info);
 	private:
 		vector<Vertex>  vertices;

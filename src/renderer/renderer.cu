@@ -1,7 +1,7 @@
+#include "renderer.h"
 #include <cstring>
 #include <iostream>
 #include <cuda_gl_interop.h>
-#include "renderer.h"
 
 namespace acr
 {
@@ -10,7 +10,7 @@ namespace acr
 		Scene *scene;
 		Color4 *screen;
 		char sceneData[sizeof(Scene)];
-		uint32_t width,height;
+		uint32_t width,height,samples;
 	};
 
 	__constant__
@@ -43,6 +43,7 @@ namespace acr
 		}
 
 		// open gl initialization
+		glCtx = SDL_GL_CreateContext(window);
 		
 		/* Set the clear color. */
 		glClearColor( 0, 0, 0, 0 );
@@ -97,13 +98,13 @@ namespace acr
 
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, drawBuffer);
 
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, dim.x * dim.y * sizeof(Color4), NULL, GL_DYNAMIC_COPY);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, dim.x * dim.y * dim.z * sizeof(Color4), NULL, GL_DYNAMIC_COPY);
 
 		cudaGLRegisterBufferObject(drawBuffer);
 
 		// setup texture
 		glEnable(GL_TEXTURE_2D);
-		glGenTexture(&textureId);
+		glGenTextures(1,&textureId);
 		
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
@@ -111,6 +112,8 @@ namespace acr
 
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+
+		cudaMalloc((void**)&cuRandStates, sizeof(curandState) * dim.x * dim.y * dim.z);
 	}
 
 	Renderer::~Renderer()
@@ -132,18 +135,79 @@ namespace acr
 		std::memcpy(params.sceneData, &scene, sizeof(Scene));
 		params.width = dim.x;
 		params.height = dim.y;
+		params.samples = dim.z;
 
 		cudaMemcpyToSymbol(&devParams, &params, sizeof(DevParams));
 	}
 
-	__global__
-	void scatterTrace()
+	__device__ __host__
+	math::vec3 get_pixel_dir(const Camera &camera, int ni, int nj)
 	{
+
+		math::vec3 dir;
+		math::vec3 up;
+		float AR;
+
+		math::vec3 cR;
+		math::vec3 cU;
+		float dist;
+		math::vec3 pos;
+    
+		dir = camera.forward;
+		up = camera.up;
+		AR = camera.aspectRatio;
+		cR = math::cross(dir, up);
+		cU = math::cross(cR, dir);
+		pos = camera.position;
+		dist = math::tan(camera.horizontalFOV/2.0);
+		
+		return math::normalize(dir + dist*(float(nj)*cU + AR*float(ni)*cR));
+	}
+
+	__global__
+	void scatterTrace(curandState *randState, unsigned long seed)
+	{
+		const int width = devParams.width;
+		const int height = devParams.height;
+		const int samples = devParams.samples;
+
 		int x = blockIdx.x * gridDim.x + threadIdx.x;
 		int y = blockIdx.y * gridDim.y + threadIdx.y;
 		int sample = blockIdx.z * gridDim.z + threadIdx.z;
+		int index = sample + samples * x + (samples * width) * y;
+		
+		devParams.screen[x + devParams.width * y] = Color4(0,0,0,0);
+		
+		curand_init(seed,index,0,&randState[index]);
 
-		devParams.screen[x + devParams.width * y] = Color4(0,0,0,1);
+		Scene *scene = devParams.scene;
+
+		float dx = 1.0f / devParams.width;
+		float dy = 1.0f / devParams.height;
+		
+		float i = 2.0f*(float(x)+curand_uniform(&randState[index]))*dx - 1.0f;
+		float j = 2.0f*(float(y)+curand_uniform(&randState[index]))*dy - 1.0f;
+
+		
+		Ray r;
+		r.o = scene->camera.position;
+		r.d = get_pixel_dir(scene->camera, i, j);
+		 
+		HitInfo info;
+		Color4 contribution;
+		if(scene->intersect(r,info))
+		{
+			contribution = Color4(scene->materials[info.materialIndex].diffuse,1);
+		}
+		else
+		{
+			contribution = Color4(0,0,0,1);
+		}
+		
+		for(int i = 0; i < 4; i++)
+		{
+			atomicAdd(&devParams.screen[x + devParams.width * y][i], contribution[i] / devParams.samples);
+		}
 	}
 
 	void Renderer::render()
@@ -153,9 +217,9 @@ namespace acr
 		
 		// call kernel to render pixels then draw to screen
 		dim3 block(4,4,16);
-		dim3 grid(dim.x / block.x, dim.y / block.y, 1);
+		dim3 grid(dim.x / block.x, dim.y / block.y, dim.z / block.z);
 		
-		scatterTrace<<<grid,block>>>();
+		scatterTrace<<<grid,block>>>(cuRandStates,SDL_GetTicks());
 		
 		// unbind draw buffer so openGL can use
 		cudaGLUnmapBufferObject(drawBuffer);
@@ -165,7 +229,7 @@ namespace acr
 
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
-		glTexSubImage(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA32F, GL_FLOAT, nullptr);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA32F, GL_FLOAT, nullptr);
 
 		// draw fullscreen quad
 		glBegin(GL_QUADS);
@@ -180,7 +244,7 @@ namespace acr
 		glEnd();
 		
 		// swap buffers
-		SDL_GL_SwapBuffers();
+		SDL_GL_SwapWindow(window);
 	}
 
 }

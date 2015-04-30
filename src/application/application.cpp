@@ -97,6 +97,7 @@ int main(int argc, char **argv)
 	args.renderer.pos.y = 0;
 	args.renderer.dim.x = 800;
 	args.renderer.dim.y = 600;
+	args.renderer.dim.z = 16;
 	args.frameRate = 60;
 	args.scene.filePath = argv[1]; //!!!! Should check for argc bound
 	// Start the app

@@ -24,16 +24,6 @@ namespace acr
 		}
 	}
 
-	Camera::Camera(const aiCamera *cam)
-	{
-		aspectRatio = cam->mAspect;
-		horizontalFOV = cam->mHorizontalFOV;
-		aiVector3D eye = cam->mPosition;
-		aiVector3D up = cam->mUp;
-		aiVector3D center = cam->mLookAt;
-		globalTransform = math::lookAt(getVec3(eye), getVec3(center), getVec3(up));
-	}
-
 	Scene::Scene(const Scene::Args &args)
 	{
 		Assimp::Importer importer;
@@ -160,21 +150,7 @@ namespace acr
 			Light &l = hLights[lIndex];
 			l.position = math::vec3(obj.globalTransform * math::vec4(l.position, 1.0));
 		}
-
-		if (name == camName)
-		{
-			camera.globalTransform = obj.globalTransform * camera.globalTransform;
-
-#ifdef LOAD_VERBOSE
-			printf("\n");
-			printf("Camera:\n");
-			math::vec3 pos = math::vec3(camera.globalTransform * math::vec4(0,0,0,1));
-			printf("-->Position[%f %f %f]\n", pos.x, pos.y, pos.z);
-			printf("-->Aspect Ratio[%f]\n", camera.aspectRatio);
-			printf("-->HorizontalFOV[%f]\n", camera.horizontalFOV);
-#endif
-		}
-
+		
 		// Load children
 		thrust::host_vector<int> children(node->mNumChildren);
 		for(int i = 0; i < node->mNumChildren; i++)
@@ -194,6 +170,15 @@ namespace acr
 			intersected = objects[i].intersect(r, info,meshes);
 		}
 		return intersected;
+	}
+
+	Camera::Camera(const aiCamera *cam)
+	{
+		aspectRatio = cam->mAspect;
+		horizontalFOV = cam->mHorizontalFOV;
+		position = getVec3(cam->mPosition);
+		up = getVec3(cam->mUp);
+		forward = math::normalize(getVec3(cam->mLookAt) - position);
 	}
 
 	Light::Light(const aiLight *aiLight)
