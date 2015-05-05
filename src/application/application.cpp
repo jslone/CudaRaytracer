@@ -1,19 +1,28 @@
 #include <iostream>
 #include "application.h"
+#include <glew.h>
+#include <GL/glut.h>
 
 namespace acr
 {
 
+	void keyboardCB( unsigned char key, int x, int y )
+	{
+  	switch ( key )
+		{
+			case 27: // Escape key
+				exit (0);
+				break;
+		}
+		glutPostRedisplay();
+	}
+
 	Application::Application(const Args args)
-		: sdl() 
-		,	renderer(args.renderer)
+		:	renderer(args.renderer)
 		, scene(args.scene)
 		, frameRate(args.frameRate)
 	{
-		if(SDL_InitSubSystem(SDL_INIT_TIMER | SDL_INIT_EVENTS))
-		{
-			std::cout << "SDL_InitSubSystem error: " << SDL_GetError() << std::endl;
-		}
+		glutKeyboardFunc(keyboardCB);
 	}
 
 	Application::~Application()
@@ -24,65 +33,7 @@ namespace acr
 		std::cout << "Starting application..." << std::endl;
 		running = true;
 		renderer.loadScene(scene);
-		run();
-	}
-
-	void Application::quit()
-	{
-		running = false;
-	}
-
-	void Application::run()
-	{
-		int32_t lagTime = 0;
-		lastTick = SDL_GetTicks();
-
-		while (running)
-		{
-			int32_t startTime = SDL_GetTicks(); // lastTick;
-
-			// Do stuff
-			handle_events();
-
-			// Sleep to avoid going over frameRate
-			int32_t period = 1000 / frameRate;
-			int32_t endTime = SDL_GetTicks();
-			int32_t deltaTime = endTime - startTime;
-			int32_t sleepTime = period - deltaTime - lagTime;
-			int32_t wakeTime = endTime + sleepTime;
-
-			std::cout << "deltaTime: " << endTime - lastTick << std::endl;
-
-			// Update last tick so we know when this frame ended
-			lastTick = endTime;
-
-			// Sleep until period is up
-			do
-			{
-				SDL_Delay(math::max(sleepTime, 1));
-				sleepTime = wakeTime - SDL_GetTicks();
-			}
-			while (sleepTime > 0);
-
-			// Update lag time with how much we overslept
-			lagTime = -sleepTime;
-		}
-	}
-
-	void Application::handle_events()
-	{
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
-			switch (event.type)
-			{
-				case SDL_QUIT:
-					quit();
-					break;
-				default:
-					break;
-			}
-		}
+		glutMainLoop();
 	}
 
 } // namespace acr

@@ -3,10 +3,9 @@
 
 
 #include <GL/glew.h>
+#include <GL/glut.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
-
-#include <SDL.h>
 
 #include <curand.h>
 #include <curand_kernel.h>
@@ -37,10 +36,8 @@ namespace acr
 
 		void render();
 	private:
-		SDL_Window *window;
-		SDL_Renderer *renderer;
-		SDL_GLContext glCtx;
-
+		int winId;
+		
 		const char *title;
 		math::u32vec3 dim;
 

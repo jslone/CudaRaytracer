@@ -20,31 +20,13 @@ namespace acr
 		: title(args.title)
 		, dim(args.dim)
 	{
-		// sdl initialization
-		if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
-		{
-			std::cerr << "SDL_InitSubSystem Error: " << SDL_GetError() << std::endl;
-			exit(EXIT_FAILURE);
-		}
+		/* Create window */
+		glutInitWindowSize(dim.x,dim.y);
+		glutInitDisplayMode(GLUT_RGBA);
+		winId = glutCreateWindow(title);
 
-		window = SDL_CreateWindow(title, args.pos.x, args.pos.y,
-								  dim.x, dim.y, SDL_WINDOW_OPENGL);
-		if (window == nullptr)
-		{
-			std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
-			exit(EXIT_FAILURE);
-		}
+		glutDisplayFunc(render);
 
-		renderer = SDL_CreateRenderer(window, -1, 0);
-		if (renderer == nullptr)
-		{
-			std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
-			exit(EXIT_FAILURE);
-		}
-
-		// open gl initialization
-		glCtx = SDL_GL_CreateContext(window);
-		
 		/* Set the clear color. */
 		glClearColor( 0, 0, 0, 0 );
 
@@ -118,14 +100,7 @@ namespace acr
 
 	Renderer::~Renderer()
 	{
-		if (renderer)
-		{
-			SDL_DestroyRenderer(renderer);
-		}
-		if (window)
-		{
-			SDL_DestroyWindow(window);
-		}
+		glutDestroyWindow(winId);
 	}
 
 	void Renderer::loadScene(const Scene &scene)
@@ -219,7 +194,7 @@ namespace acr
 		dim3 block(4,4,16);
 		dim3 grid(dim.x / block.x, dim.y / block.y, dim.z / block.z);
 		
-		scatterTrace<<<grid,block>>>(cuRandStates,SDL_GetTicks());
+		scatterTrace<<<grid,block>>>(cuRandStates,glutGet(GLUT_ELAPSED_TIME));
 		
 		// unbind draw buffer so openGL can use
 		cudaGLUnmapBufferObject(drawBuffer);
@@ -244,7 +219,8 @@ namespace acr
 		glEnd();
 		
 		// swap buffers
-		SDL_GL_SwapWindow(window);
+		glutSwapBuffers();
+		glutPostRedisplay();
 	}
 
 }
