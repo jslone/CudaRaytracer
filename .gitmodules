@@ -10,3 +10,6 @@
 [submodule "src/libs/glew"]
 	path = src/libs/glew
 	url = https://github.com/nigels-com/glew.git
+[submodule "src/libs/FreeGLUT"]
+	path = src/libs/FreeGLUT
+	url = https://github.com/dcnieho/FreeGLUT.git

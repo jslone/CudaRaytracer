@@ -29,9 +29,17 @@ namespace acr
 		renderer = this;
 
 		/* Create window */
-		glutInitWindowSize(dim.x,dim.y);
 		glutInitDisplayMode(GLUT_RGBA);
+		glutInitWindowSize(dim.x, dim.y);
+
 		winId = glutCreateWindow(title);
+
+		GLenum err = glewInit();
+		if (err != GLEW_OK)
+		{
+			std::cerr << "glewInit: " << glewGetErrorString(err) << std::endl;
+			exit(EXIT_FAILURE);
+		}
 
 		glutDisplayFunc(globalRender);
 
@@ -51,7 +59,7 @@ namespace acr
 
 		// cuda interop initialization
 		uint32_t numDevices;
-		uint32_t maxNumDevices = 1;
+		const uint32_t maxNumDevices = 1;
 		int devices[maxNumDevices];
 		cudaError_t cudaErr = cudaGLGetDevices(&numDevices, devices, maxNumDevices, cudaGLDeviceListAll);
 		if(cudaErr != cudaSuccess)
