@@ -1,9 +1,3 @@
-[submodule "src/libs/tinyxml2"]
-	path = src/libs/tinyxml2
-	url = https://github.com:leethomason/tinyxml2.git
-[submodule "src/libs/tinyobjloader"]
-	path = src/libs/tinyobjloader
-	url = https://github.com:syoyo/tinyobjloader.git
 [submodule "src/libs/assimp"]
 	path = src/libs/assimp
 	url = https://github.com/jslone/assimp.git
