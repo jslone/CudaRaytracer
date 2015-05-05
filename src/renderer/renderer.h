@@ -36,6 +36,7 @@ namespace acr
 
 		void render();
 	private:
+
 		int winId;
 		
 		const char *title;

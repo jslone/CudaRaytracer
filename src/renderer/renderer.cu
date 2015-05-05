@@ -160,12 +160,10 @@ namespace acr
 	{
 		const int width = devParams.width;
 		const int height = devParams.height;
-		const int samples = devParams.samples;
 
 		int x = blockIdx.x * gridDim.x + threadIdx.x;
 		int y = blockIdx.y * gridDim.y + threadIdx.y;
-		int sample = blockIdx.z * gridDim.z + threadIdx.z;
-		int index = sample + samples * x + (samples * width) * y;
+		int index = x + width * y;
 		
 		devParams.screen[x + devParams.width * y] = Color4(0,0,0,0);
 		
@@ -195,10 +193,7 @@ namespace acr
 			contribution = Color4(0,0,0,1);
 		}
 		
-		for(int i = 0; i < 4; i++)
-		{
-			atomicAdd(&devParams.screen[x + devParams.width * y][i], contribution[i] / devParams.samples);
-		}
+		devParams.screen[index] = contribution;
 	}
 
 	void Renderer::render()
@@ -207,8 +202,8 @@ namespace acr
 		cudaGLMapBufferObject((void**)&devParams.screen, drawBuffer);
 		
 		// call kernel to render pixels then draw to screen
-		dim3 block(4,4,16);
-		dim3 grid(dim.x / block.x, dim.y / block.y, dim.z / block.z);
+		dim3 block(16,16,1);
+		dim3 grid(dim.x / block.x, dim.y / block.y, 1);
 		
 		scatterTrace<<<grid,block>>>(cuRandStates,glutGet(GLUT_ELAPSED_TIME));
 		
