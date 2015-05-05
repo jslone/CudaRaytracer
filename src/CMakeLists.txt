@@ -29,6 +29,7 @@ link_libraries(
 	SDL2
 	assimp
 	glew
+	glut
 	${OPENGL_LIBRARIES}
 )
 

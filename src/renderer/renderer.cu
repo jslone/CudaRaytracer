@@ -15,17 +15,25 @@ namespace acr
 
 	__constant__
 	DevParams devParams;
+	
+	Renderer *renderer;
+	void globalRender()
+	{
+		renderer->render();
+	}
 
 	Renderer::Renderer(const Renderer::Args &args)
 		: title(args.title)
 		, dim(args.dim)
 	{
+		renderer = this;
+
 		/* Create window */
 		glutInitWindowSize(dim.x,dim.y);
 		glutInitDisplayMode(GLUT_RGBA);
 		winId = glutCreateWindow(title);
 
-		glutDisplayFunc(render);
+		glutDisplayFunc(globalRender);
 
 		/* Set the clear color. */
 		glClearColor( 0, 0, 0, 0 );
@@ -48,7 +56,7 @@ namespace acr
 		cudaError_t cudaErr = cudaGLGetDevices(&numDevices, devices, maxNumDevices, cudaGLDeviceListAll);
 		if(cudaErr != cudaSuccess)
 		{
-			std::cout << "cudaGLGetDevices: ";
+			std::cout << "cudaGLGetDevices[" << cudaErr << "]: ";
 			switch(cudaErr)
 			{
 				case cudaErrorNoDevice:

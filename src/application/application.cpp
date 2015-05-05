@@ -1,6 +1,6 @@
 #include <iostream>
 #include "application.h"
-#include <glew.h>
+#include <GL/glew.h>
 #include <GL/glut.h>
 
 namespace acr
@@ -18,7 +18,7 @@ namespace acr
 	}
 
 	Application::Application(const Args args)
-		:	renderer(args.renderer)
+		: renderer(args.renderer)
 		, scene(args.scene)
 		, frameRate(args.frameRate)
 	{
@@ -41,6 +41,8 @@ namespace acr
 
 int main(int argc, char **argv)
 {
+	glutInit(&argc,argv);
+
 	// Setup
 	acr::Application::Args args;
 	args.renderer.title = "CudaRenderer";
