@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.74.0 commit date:2015-03-31, commit time:13:39, hash:000dfc0</authoring_tool>
     </contributor>
-    <created>2015-05-05T03:33:02</created>
-    <modified>2015-05-05T03:33:02</modified>
+    <created>2015-05-06T19:00:22</created>
+    <modified>2015-05-06T19:00:22</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -33,7 +33,39 @@
   </library_cameras>
   <library_images/>
   <library_effects>
-    <effect id="Khaki-effect">
+    <effect id="Khaki_002-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <phong>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <color sid="diffuse">0.8 0.6593408 0.4395605 1</color>
+            </diffuse>
+            <specular>
+              <color sid="specular">0.5 0.5 0.5 1</color>
+            </specular>
+            <shininess>
+              <float sid="shininess">50</float>
+            </shininess>
+            <index_of_refraction>
+              <float sid="index_of_refraction">1</float>
+            </index_of_refraction>
+          </phong>
+        </technique>
+        <extra>
+          <technique profile="GOOGLEEARTH">
+            <double_sided>1</double_sided>
+          </technique>
+        </extra>
+      </profile_COMMON>
+      <extra><technique profile="MAX3D"><double_sided>1</double_sided></technique></extra>
+    </effect>
+    <effect id="Khaki_001-effect">
       <profile_COMMON>
         <technique sid="common">
           <phong>
@@ -129,6 +161,38 @@
       </profile_COMMON>
       <extra><technique profile="MAX3D"><double_sided>1</double_sided></technique></extra>
     </effect>
+    <effect id="Khaki-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <phong>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <color sid="diffuse">0.8 0.6593408 0.4395605 1</color>
+            </diffuse>
+            <specular>
+              <color sid="specular">0.5 0.5 0.5 1</color>
+            </specular>
+            <shininess>
+              <float sid="shininess">50</float>
+            </shininess>
+            <index_of_refraction>
+              <float sid="index_of_refraction">1</float>
+            </index_of_refraction>
+          </phong>
+        </technique>
+        <extra>
+          <technique profile="GOOGLEEARTH">
+            <double_sided>1</double_sided>
+          </technique>
+        </extra>
+      </profile_COMMON>
+      <extra><technique profile="MAX3D"><double_sided>1</double_sided></technique></extra>
+    </effect>
     <effect id="Grey-effect">
       <profile_COMMON>
         <technique sid="common">
@@ -163,14 +227,20 @@
     </effect>
   </library_effects>
   <library_materials>
-    <material id="Khaki-material" name="Khaki">
-      <instance_effect url="#Khaki-effect"/>
+    <material id="Khaki_002-material" name="Khaki_002">
+      <instance_effect url="#Khaki_002-effect"/>
+    </material>
+    <material id="Khaki_001-material" name="Khaki_001">
+      <instance_effect url="#Khaki_001-effect"/>
     </material>
     <material id="DarkGreen-material" name="DarkGreen">
       <instance_effect url="#DarkGreen-effect"/>
     </material>
     <material id="Material_003-material" name="Material_003">
       <instance_effect url="#Material_003-effect"/>
+    </material>
+    <material id="Khaki-material" name="Khaki">
+      <instance_effect url="#Khaki-effect"/>
     </material>
     <material id="Grey-material" name="Grey">
       <instance_effect url="#Grey-effect"/>
@@ -202,7 +272,7 @@
         <vertices id="tall_box-mesh-vertices">
           <input semantic="POSITION" source="#tall_box-mesh-positions"/>
         </vertices>
-        <polylist material="Khaki-material" count="10">
+        <polylist material="Khaki_002-material" count="10">
           <input semantic="VERTEX" source="#tall_box-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#tall_box-mesh-normals" offset="1"/>
           <vcount>3 3 3 3 3 3 3 3 3 3 </vcount>
@@ -235,7 +305,7 @@
         <vertices id="short_box-mesh-vertices">
           <input semantic="POSITION" source="#short_box-mesh-positions"/>
         </vertices>
-        <polylist material="Khaki-material" count="10">
+        <polylist material="Khaki_001-material" count="10">
           <input semantic="VERTEX" source="#short_box-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#short_box-mesh-normals" offset="1"/>
           <vcount>3 3 3 3 3 3 3 3 3 3 </vcount>
@@ -450,7 +520,7 @@
         <instance_geometry url="#tall_box-mesh">
           <bind_material>
             <technique_common>
-              <instance_material symbol="Khaki-material" target="#Khaki-material"/>
+              <instance_material symbol="Khaki_002-material" target="#Khaki_002-material"/>
             </technique_common>
           </bind_material>
         </instance_geometry>
@@ -460,7 +530,7 @@
         <instance_geometry url="#short_box-mesh">
           <bind_material>
             <technique_common>
-              <instance_material symbol="Khaki-material" target="#Khaki-material"/>
+              <instance_material symbol="Khaki_001-material" target="#Khaki_001-material"/>
             </technique_common>
           </bind_material>
         </instance_geometry>

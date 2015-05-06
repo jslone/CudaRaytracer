@@ -9,6 +9,7 @@ namespace acr
 		: materialIndex(aiMesh->mMaterialIndex)
 	{
 		thrust::host_vector<Vertex> vs(aiMesh->mNumVertices);
+		std::cout << "Verts[";
 		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
 		{
 			for (uint32_t j = 0; j < 3; j++)
@@ -17,21 +18,24 @@ namespace acr
 				vs[i].normal[j] = aiMesh->mNormals[i][j];
 				vs[i].color[j] = aiMesh->mColors[0] ? aiMesh->mColors[0][i][j] : 1.0f;
 			}
+			std::cout << math::to_string(vs[i].position) << ",";
 		}
+		std::cout << "\b]" << std::endl;
 		vertices = vector<Vertex>(vs);
 
+		std::cout << "Faces[";
 		thrust::host_vector<Face> f(aiMesh->mNumFaces);
 		for (uint32_t i = 0; i < aiMesh->mNumFaces; i++)
 		{
-			std::cout << "[";
+			std::cout << "<";
 			for (uint32_t j = 0; j < 3; j++)
 			{
 				f[i].indices[j] = aiMesh->mFaces[i].mIndices[j];
 				std::cout << f[i].indices[j] << ",";
 			}
-			std::cout << "\b],";
+			std::cout << "\b>,";
 		}
-		std::cout << "\b" << std::endl;
+		std::cout << "\b]" << std::endl;
 		faces = vector<Face>(f);
 	}
 	
@@ -47,13 +51,13 @@ namespace acr
 			const Vertex &v2 = vertices[faces[i].indices[2]];
 
 			const math::vec3 &a = v0.position;
-			math::vec3 b = v1.position - a;
-			math::vec3 c = v2.position - a;
+			const math::vec3 &b = v1.position;
+			const math::vec3 &c = v2.position;
 			math::vec3 bCoords;
 
 			if (math::intersectRayTriangle(r.o, r.d, a, b, c, bCoords))
 			{
-				math::vec3 position = bCoords.x*a + bCoords.y*b + bCoords.z*c;
+				math::vec3 position = bCoords.x*a + bCoords.y*(b-a) + bCoords.z*(c-a);
 
 				float t = math::length(position - r.o);
 

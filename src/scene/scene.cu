@@ -150,8 +150,10 @@ namespace acr
 		// Check to see if these objects are lights or cameras
 		std::string name = std::string(node->mName.C_Str());
 
-		math::vec3 pos = math::vec3(tmp.globalTransform * math::vec4(0, 0, 0, 1));
+		math::vec3 pos = math::translate(tmp.globalTransform, math::vec3(0, 0, 0));
 		std::cout << name << ": " << math::to_string(pos) << std::endl;
+		std::cout << name << " transform: " << math::to_string(tmp.globalTransform) << std::endl;
+		std::cout << name << " normal trans: " << math::to_string(tmp.globalNormalTransform) << std::endl;
 
 		auto light_got = lightMap.find(name);
 
@@ -159,12 +161,15 @@ namespace acr
 		{
 			int lIndex = light_got->second;
 			Light &l = hLights[lIndex];
-			l.position = math::vec3(objs[i].globalTransform * math::vec4(l.position, 1.0));
+			l.position = math::translate(objs[i].globalTransform, l.position);
 		}
 
 		if (name == camName)
 		{
-			camera.position = math::vec3(tmp.globalTransform * math::vec4(camera.position,1.0f));
+			camera.position = math::translate(tmp.globalTransform, camera.position);
+			camera.forward = math::translaten(tmp.globalNormalTransform, camera.forward);
+			camera.up = math::translaten(tmp.globalNormalTransform, camera.up);
+			std::cout << "Camera dir: " << math::to_string(camera.forward) << std::endl;
 		}
 		
 		// Load children
@@ -183,7 +188,7 @@ namespace acr
 		bool intersected = false;
 		for (int i = 0; i < objects.size(); i++)
 		{
-			intersected = objects[i].intersect(r, info,meshes);
+			intersected |= objects[i].intersect(r, info, meshes);
 		}
 		return intersected;
 	}
@@ -260,27 +265,29 @@ namespace acr
 	bool Object::intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshMap)
 	{
 		Ray lr;
-		lr.o = math::vec3(globalInverseTransform * math::vec4(r.o, 1.0));
-		lr.d = math::vec3(globalInverseNormalTransform * math::vec4(r.d, 1.0));
+		lr.o = math::translate(globalInverseTransform, r.o);
+		lr.d = math::translaten(globalInverseNormalTransform, r.d);
 
 		// mesh intersection
 		bool intersected = false;
+		
+		HitInfo tmpInfo;
+		tmpInfo.t = FLT_MAX;
+
 		for (int i = 0; i < meshes.size(); i++)
 		{
-			HitInfo tmpInfo;
-			tmpInfo.t = FLT_MAX;
-			if (meshMap[meshes[i]].intersect(lr, tmpInfo))
-			{
-				intersected = true;
-				tmpInfo.point.position = math::vec3(globalTransform * math::vec4(tmpInfo.point.position, 1.0));
-				tmpInfo.point.normal = math::vec3(globalNormalTransform * math::vec4(tmpInfo.point.normal, 1.0));
-				float t = math::length(tmpInfo.point.position - r.o);
-				if (t < info.t)
-				{
-					info = tmpInfo;
-					info.t = t;
-				}
-			}
+			intersected |= meshMap[meshes[i]].intersect(lr, tmpInfo);
+		}
+
+		if (intersected)
+		{
+			tmpInfo.point.position = math::translate(globalTransform, tmpInfo.point.position);
+			tmpInfo.point.normal = math::translaten(globalNormalTransform, tmpInfo.point.normal);
+
+			float t = math::length(tmpInfo.point.position - r.o);
+
+			info = tmpInfo;
+			info.t = t;
 		}
 
 		return intersected;

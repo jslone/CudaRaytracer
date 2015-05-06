@@ -30,6 +30,10 @@ namespace acr
 		glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 		glutInitWindowSize(dim.x, dim.y);
 
+		dim.x *= dim.z;
+		dim.y *= dim.z;
+		dim.z = 1;
+
 		winId = glutCreateWindow(title);
 
 		GLenum err = glewInit();
@@ -109,8 +113,6 @@ namespace acr
 
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-
-		cudaMalloc((void**)&cuRandStates, sizeof(curandState) * dim.x * dim.y);
 	}
 
 	Renderer::~Renderer()
@@ -120,7 +122,6 @@ namespace acr
 
 	void Renderer::moveCamera(const math::vec3 &pos, const math::vec2 &dir)
 	{
-		std::cout << "Rot amount: " << math::to_string(dir) << std::endl;
 		DevParams param;
 		cudaMemcpyFromSymbol(&param, devParams, sizeof(DevParams));
 
@@ -135,8 +136,6 @@ namespace acr
 
 		scene->camera.position += pos;
 
-		std::cout << "New Dir: " << math::to_string(scene->camera.forward) << std::endl;
-
 		cudaMemcpyToSymbol(devParams, &param, sizeof(DevParams));
 	}
 
@@ -147,6 +146,9 @@ namespace acr
 		params.width = dim.x;
 		params.height = dim.y;
 		params.samples = dim.z;
+
+		Scene *myScene = (Scene*)&params;
+		myScene->camera.aspectRatio = float(dim.x) / float(dim.y);
 
 		cudaMemcpyToSymbol(devParams, &params, sizeof(DevParams));
 	}
@@ -175,8 +177,32 @@ namespace acr
 		return math::normalize(dir + dist*(float(nj)*cU + AR*float(ni)*cR));
 	}
 
+	__device__
+	math::vec3 get_pixel_pos(const Camera &camera, float ni, float nj)
+	{
+
+		math::vec3 dir;
+		math::vec3 up;
+		float AR;
+
+		math::vec3 cR;
+		math::vec3 cU;
+		float dist;
+		math::vec3 pos;
+
+		dir = camera.forward;
+		up = camera.up;
+		AR = camera.aspectRatio;
+		cR = math::cross(dir, up);
+		cU = math::cross(cR, dir);
+		pos = camera.position;
+		dist = math::fastertanfull(camera.horizontalFOV / 2.0f);
+
+		return camera.position + dist*(float(nj)*cU + AR*float(ni)*cR);
+	}
+
 	__global__
-	void scatterTrace(Color4 *screen/*, curandState *randState, unsigned long seed*/)
+	void scatterTrace(Color4 *screen, unsigned long seed)
 	{
 		const int width = devParams->width;
 		const int height = devParams->height;
@@ -190,36 +216,24 @@ namespace acr
 			return;
 		}
 		
-		
-		//curand_init(seed,index,0,&randState[index]);
+		curandState state;
+		curand_init(seed, 0, 0, &state);
 
 		Scene *scene = (Scene*)devParams;
 
 		float dx = 1.0f / width;
 		float dy = 1.0f / height;
 		
-		float i = 2.0f*(float(x) + 0.5f)*dx - 1.0f;//2.0f*(float(x)+curand_uniform(&randState[index]))*dx - 1.0f;
-		float j = 2.0f*(float(y) + 0.5f)*dy - 1.0f;//2.0f*(float(y) + curand_uniform(&randState[index]))*dy - 1.0f;
+		float i = 2.0f*(float(x) + curand_uniform(&state))*dx - 1.0f;
+		float j = 2.0f*(float(y) + curand_uniform(&state))*dy - 1.0f;
 
-		
 		Ray r;
 		r.o = scene->camera.position;
 		r.d = get_pixel_dir(scene->camera, i, j);
-		
-		if (false && x == width - 1 && y == height - 1)
-		{
-			printf("pos: (%f, %f, %f), dir: (%f, %f, %f)\n", r.o.x, r.o.y, r.o.z, r.d.x, r.d.y, r.d.z);
-			for (int i = 0; i < scene->materials.size(); i++)
-			{
-				Color3 &c = scene->materials[i].diffuse;
-				printf("Diffuse: %f, %f, %f, %f\n", c.r, c.g, c.b);
-			}
-		}
 
 		HitInfo info;
 		info.t = FLT_MAX;
-		Color4 contribution = Color4(1, 0, 0, 1);
-		
+		Color4 contribution = Color4(0, 0, 0, 1);
 		if(scene->intersect(r,info))
 		{
 			Color3 &c = scene->materials[info.materialIndex].diffuse;
@@ -243,7 +257,7 @@ namespace acr
 		dim3 block(16,16);
 		dim3 grid((dim.x + block.x - 1) / block.x, (dim.y + block.y - 1) / block.y);
 
-		scatterTrace<<<grid,block>>>(screen/*,cuRandStates,glutGet(GLUT_ELAPSED_TIME)*/);
+		scatterTrace<<<grid,block>>>(screen,glutGet(GLUT_ELAPSED_TIME));
 		cudaDeviceSynchronize();
 
 		// unbind draw buffer so openGL can use

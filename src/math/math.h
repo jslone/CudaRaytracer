@@ -116,6 +116,17 @@ namespace acr
 
 			return baryPosition.z >= typename genType::value_type(0.0f);
 		}
+
+		GLM_FUNC_QUALIFIER vec3 translate(const mat4 &m, const vec3 &v)
+		{
+			vec4 hom = m * vec4(v, 1.0f);
+			return vec3(hom) / hom.w;
+		}
+
+		GLM_FUNC_QUALIFIER vec3 translaten(const mat4 &m, const vec3 &v)
+		{
+			return normalize(translate(m, v));
+		}
 	}
 }
 
