@@ -118,6 +118,28 @@ namespace acr
 		glutDestroyWindow(winId);
 	}
 
+	void Renderer::moveCamera(const math::vec3 &pos, const math::vec2 &dir)
+	{
+		std::cout << "Rot amount: " << math::to_string(dir) << std::endl;
+		DevParams param;
+		cudaMemcpyFromSymbol(&param, devParams, sizeof(DevParams));
+
+		Scene *scene = (Scene*)&param;
+
+		scene->camera.forward = math::rotate(scene->camera.forward, dir.x, scene->camera.up);
+
+		math::vec3 right = math::cross(scene->camera.forward, scene->camera.up);
+
+		scene->camera.forward = math::rotate(scene->camera.forward, dir.y, right);
+		scene->camera.up = math::rotate(scene->camera.up, dir.y, right);
+
+		scene->camera.position += pos;
+
+		std::cout << "New Dir: " << math::to_string(scene->camera.forward) << std::endl;
+
+		cudaMemcpyToSymbol(devParams, &param, sizeof(DevParams));
+	}
+
 	void Renderer::loadScene(const Scene &scene)
 	{
 		DevParams params;
@@ -201,33 +223,10 @@ namespace acr
 		if(scene->intersect(r,info))
 		{
 			Color3 &c = scene->materials[info.materialIndex].diffuse;
-			contribution = Color4(c,1);
-		}
-		else
-		{
-			contribution = Color4(0, 1, 0, 1);
+			contribution = Color4(c, 1);
 		}
 
 		screen[index] = contribution;
-	}
-
-	void Renderer::moveCamera(const math::vec3 &pos, const math::vec3 &dir)
-	{
-		return;
-		DevParams param;
-		cudaMemcpyFromSymbol(&param, devParams, sizeof(DevParams));
-
-		Scene *scene = (Scene*)&param;
-
-		math::vec3 realDelta = math::vec3(0, 0, 1) - dir;
-		scene->camera.forward += realDelta;
-		scene->camera.forward = math::normalize(scene->camera.forward);
-
-		scene->camera.position += pos;
-
-		std::cout << "New Dir: " << scene->camera.forward.x << "," << scene->camera.forward.y << "," << scene->camera.forward.z << std::endl;
-
-		cudaMemcpyToSymbol(devParams, &param, sizeof(DevParams));
 	}
 
 	void Renderer::render()

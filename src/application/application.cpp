@@ -7,19 +7,54 @@ namespace acr
 {
 	Application *app;
 
+	const float movSpeed = 0.5f;
 	void keyboardCB( unsigned char key, int x, int y )
 	{
   		switch ( key )
 		{
+			case 'w':
+				app->renderer.moveCamera(math::vec3(0, 0, 1)*movSpeed, math::vec2(0,0));
+				break;
+			case 'a':
+				app->renderer.moveCamera(math::vec3(-1, 0, 0)*movSpeed, math::vec2(0, 0));
+				break;
+			case 's':
+				app->renderer.moveCamera(math::vec3(0, 0, -1)*movSpeed, math::vec2(0, 0));
+				break;
+			case 'd':
+				app->renderer.moveCamera(math::vec3(1, 0, 0)*movSpeed, math::vec2(0, 0));
+				break;
 			case 27: // Escape key
 				exit (0);
 				break;
 		}
-		if (x || y)
-		{
-			app->renderer.moveCamera(math::vec3(0, 0, 0), math::normalize(math::vec3(x, y, 0) / 1000.0f));
-		}
 		glutPostRedisplay();
+	}
+
+	bool shouldRot = false;
+	math::vec2 mousePos(-1, -1);
+
+	void mousePressCB(int button, int state, int x, int y)
+	{
+		mousePos.x = x;
+		mousePos.y = y;
+		std::cout << (state == GLUT_DOWN ? "yar" : "nar") << std::endl;
+		shouldRot = state == GLUT_DOWN;
+	}
+	
+	const float rotSpeed = 1.0f / 1000.0f;
+
+	void mouseMoveCB(int x, int y)
+	{
+		math::vec2 nextPos(x, y);
+
+		if (shouldRot)
+		{
+			math::vec2 delta = (nextPos - mousePos) * rotSpeed;
+			delta.x *= -1;
+			app->renderer.moveCamera(math::vec3(0, 0, 0), delta);
+		}
+		mousePos = nextPos;
 	}
 
 	Application::Application(const Args args)
@@ -28,6 +63,8 @@ namespace acr
 		, frameRate(args.frameRate)
 	{
 		glutKeyboardFunc(keyboardCB);
+		glutMotionFunc(mouseMoveCB);
+		glutMouseFunc(mousePressCB);
 	}
 
 	Application::~Application()

@@ -3,7 +3,17 @@
 
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
+#include "gtx/rotate_vector.hpp"
 
+#if __CUDA_ARCH__
+namespace glm
+{
+	template <template <typename, precision> class matType, typename T, precision P>
+	GLM_FUNC_DECL const char* to_string(matType<T, P> const & x) { return "NO STRING FOR YOU."; }
+}
+#else
+#include "gtx/string_cast.hpp"
+#endif
 namespace acr
 {
 	namespace math

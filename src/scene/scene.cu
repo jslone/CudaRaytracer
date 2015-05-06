@@ -101,7 +101,7 @@ namespace acr
 		for (auto&& mat : mats)
 		{
 			Color3 &c = mat.diffuse;
-			printf("Diffuse: %f, %f, %f, %f\n", c.r, c.g, c.b);
+			std::cout << "Diffuse: " << math::to_string(c) << std::endl;
 		}
 
 		materials = vector<Material>(thrust::host_vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials));
@@ -151,7 +151,7 @@ namespace acr
 		std::string name = std::string(node->mName.C_Str());
 
 		math::vec3 pos = math::vec3(tmp.globalTransform * math::vec4(0, 0, 0, 1));
-		std::cout << name << ": " << pos.x << "," << pos.y << "," << pos.z << std::endl;
+		std::cout << name << ": " << math::to_string(pos) << std::endl;
 
 		auto light_got = lightMap.find(name);
 

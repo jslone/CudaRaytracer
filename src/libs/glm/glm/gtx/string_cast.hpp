@@ -50,7 +50,7 @@
 #include "../gtc/type_precision.hpp"
 #include <string>
 
-#if(GLM_COMPILER & GLM_COMPILER_CUDA)
+#if(GLM_COMPILER & GLM_COMPILER_CUDA && __CUDA_ARCH__)
 #	error "GLM_GTX_string_cast is not supported on CUDA compiler"
 #endif
 

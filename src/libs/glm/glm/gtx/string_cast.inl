@@ -36,7 +36,7 @@
 namespace glm{
 namespace detail
 {
-	GLM_FUNC_QUALIFIER std::string format(const char* msg, ...)
+	GLM_INLINE std::string format(const char* msg, ...)
 	{
 		std::size_t const STRING_BUFFER(4096);
 		char text[STRING_BUFFER];
