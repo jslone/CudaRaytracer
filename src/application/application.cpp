@@ -5,14 +5,19 @@
 
 namespace acr
 {
+	Application *app;
 
 	void keyboardCB( unsigned char key, int x, int y )
 	{
-  	switch ( key )
+  		switch ( key )
 		{
 			case 27: // Escape key
 				exit (0);
 				break;
+		}
+		if (x || y)
+		{
+			app->renderer.moveCamera(math::vec3(0, 0, 0), math::normalize(math::vec3(x, y, 0) / 1000.0f));
 		}
 		glutPostRedisplay();
 	}

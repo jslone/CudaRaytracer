@@ -200,14 +200,34 @@ namespace acr
 		
 		if(scene->intersect(r,info))
 		{
-			if (info.materialIndex < 0 || info.materialIndex >= scene->materials.size())
-				printf("whaaaat %d\n", info.materialIndex);
 			Color3 &c = scene->materials[info.materialIndex].diffuse;
-			//printf("Diffuse: %f, %f, %f, %f\n", c.r, c.g, c.b);
 			contribution = Color4(c,1);
+		}
+		else
+		{
+			contribution = Color4(0, 1, 0, 1);
 		}
 
 		screen[index] = contribution;
+	}
+
+	void Renderer::moveCamera(const math::vec3 &pos, const math::vec3 &dir)
+	{
+		return;
+		DevParams param;
+		cudaMemcpyFromSymbol(&param, devParams, sizeof(DevParams));
+
+		Scene *scene = (Scene*)&param;
+
+		math::vec3 realDelta = math::vec3(0, 0, 1) - dir;
+		scene->camera.forward += realDelta;
+		scene->camera.forward = math::normalize(scene->camera.forward);
+
+		scene->camera.position += pos;
+
+		std::cout << "New Dir: " << scene->camera.forward.x << "," << scene->camera.forward.y << "," << scene->camera.forward.z << std::endl;
+
+		cudaMemcpyToSymbol(devParams, &param, sizeof(DevParams));
 	}
 
 	void Renderer::render()

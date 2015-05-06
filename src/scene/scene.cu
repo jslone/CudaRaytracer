@@ -267,15 +267,22 @@ namespace acr
 		bool intersected = false;
 		for (int i = 0; i < meshes.size(); i++)
 		{
-			intersected = meshMap[meshes[i]].intersect(lr, info);
+			HitInfo tmpInfo;
+			tmpInfo.t = FLT_MAX;
+			if (meshMap[meshes[i]].intersect(lr, tmpInfo))
+			{
+				intersected = true;
+				tmpInfo.point.position = math::vec3(globalTransform * math::vec4(tmpInfo.point.position, 1.0));
+				tmpInfo.point.normal = math::vec3(globalNormalTransform * math::vec4(tmpInfo.point.normal, 1.0));
+				float t = math::length(tmpInfo.point.position - r.o);
+				if (t < info.t)
+				{
+					info = tmpInfo;
+					info.t = t;
+				}
+			}
 		}
 
-		// transform to world space
-		if(intersected)
-		{
-			info.point.position = math::vec3(globalTransform * math::vec4(info.point.position, 1.0));
-			info.point.normal = math::vec3(globalNormalTransform * math::vec4(info.point.normal, 1.0));
-		}
 		return intersected;
 	}
 }

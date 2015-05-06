@@ -23,11 +23,15 @@ namespace acr
 		thrust::host_vector<Face> f(aiMesh->mNumFaces);
 		for (uint32_t i = 0; i < aiMesh->mNumFaces; i++)
 		{
+			std::cout << "[";
 			for (uint32_t j = 0; j < 3; j++)
 			{
 				f[i].indices[j] = aiMesh->mFaces[i].mIndices[j];
+				std::cout << f[i].indices[j] << ",";
 			}
+			std::cout << "\b],";
 		}
+		std::cout << "\b" << std::endl;
 		faces = vector<Face>(f);
 	}
 	

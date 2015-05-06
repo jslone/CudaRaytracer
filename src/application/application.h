@@ -32,9 +32,10 @@ namespace acr
 		void start();
 		void quit();
 
-	private:
 		Renderer renderer;
 		Scene scene;
+
+	private:
 		bool running;
 		int32_t lastTick;
 		uint32_t frameRate;
