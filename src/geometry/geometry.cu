@@ -6,6 +6,7 @@ namespace acr
 {
 	
 	Mesh::Mesh(const aiMesh *aiMesh)
+		: materialIndex(aiMesh->mMaterialIndex)
 	{
 		thrust::host_vector<Vertex> vs(aiMesh->mNumVertices);
 		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
@@ -35,7 +36,7 @@ namespace acr
 	bool Mesh::intersect(const Ray &r, HitInfo &info)
 	{
 		bool intersected = false;
-		for (uint32_t i = 0; i < vertices.size(); i++)
+		for (uint32_t i = 0; i < faces.size(); i++)
 		{
 			const Vertex &v0 = vertices[faces[i].indices[0]];
 			const Vertex &v1 = vertices[faces[i].indices[1]];

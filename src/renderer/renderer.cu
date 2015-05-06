@@ -7,14 +7,12 @@ namespace acr
 {
 	struct DevParams
 	{
-		Scene *scene;
-		Color4 *screen;
 		char sceneData[sizeof(Scene)];
 		uint32_t width,height,samples;
 	};
 
 	__constant__
-	DevParams devParams;
+	DevParams devParams[1];
 	
 	Renderer *renderer;
 	void globalRender()
@@ -29,7 +27,7 @@ namespace acr
 		renderer = this;
 
 		/* Create window */
-		glutInitDisplayMode(GLUT_RGBA);
+		glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 		glutInitWindowSize(dim.x, dim.y);
 
 		winId = glutCreateWindow(title);
@@ -44,7 +42,8 @@ namespace acr
 		glutDisplayFunc(globalRender);
 
 		/* Set the clear color. */
-		glClearColor( 0, 0, 0, 0 );
+		glClearColor( 0, 0, 0, 1 );
+		glClear(GL_COLOR_BUFFER_BIT);
 
 		/* Setup our viewport. */
 		glViewport( 0, 0, dim.x, dim.y );
@@ -96,7 +95,7 @@ namespace acr
 
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, drawBuffer);
 
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, dim.x * dim.y * dim.z * sizeof(Color4), NULL, GL_DYNAMIC_COPY);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, dim.x * dim.y * sizeof(Color4), NULL, GL_DYNAMIC_COPY);
 
 		cudaGLRegisterBufferObject(drawBuffer);
 
@@ -106,12 +105,12 @@ namespace acr
 		
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, dim.x, dim.y, 0, GL_RGBA32F, GL_FLOAT, nullptr);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dim.x, dim.y, 0, GL_RGBA, GL_FLOAT, nullptr);
 
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 
-		cudaMalloc((void**)&cuRandStates, sizeof(curandState) * dim.x * dim.y * dim.z);
+		cudaMalloc((void**)&cuRandStates, sizeof(curandState) * dim.x * dim.y);
 	}
 
 	Renderer::~Renderer()
@@ -122,17 +121,16 @@ namespace acr
 	void Renderer::loadScene(const Scene &scene)
 	{
 		DevParams params;
-		params.scene = (Scene*)(&devParams.sceneData[0]);
 		std::memcpy(params.sceneData, &scene, sizeof(Scene));
 		params.width = dim.x;
 		params.height = dim.y;
 		params.samples = dim.z;
 
-		cudaMemcpyToSymbol(&devParams, &params, sizeof(DevParams));
+		cudaMemcpyToSymbol(devParams, &params, sizeof(DevParams));
 	}
 
-	__device__ __host__
-	math::vec3 get_pixel_dir(const Camera &camera, int ni, int nj)
+	__device__
+	math::vec3 get_pixel_dir(const Camera &camera, float ni, float nj)
 	{
 
 		math::vec3 dir;
@@ -150,72 +148,99 @@ namespace acr
 		cR = math::cross(dir, up);
 		cU = math::cross(cR, dir);
 		pos = camera.position;
-		dist = math::tan(camera.horizontalFOV/2.0);
+		dist = math::fastertanfull(camera.horizontalFOV/2.0f);
 		
 		return math::normalize(dir + dist*(float(nj)*cU + AR*float(ni)*cR));
 	}
 
 	__global__
-	void scatterTrace(curandState *randState, unsigned long seed)
+	void scatterTrace(Color4 *screen/*, curandState *randState, unsigned long seed*/)
 	{
-		const int width = devParams.width;
-		const int height = devParams.height;
+		const int width = devParams->width;
+		const int height = devParams->height;
 
-		int x = blockIdx.x * gridDim.x + threadIdx.x;
-		int y = blockIdx.y * gridDim.y + threadIdx.y;
+		int x = blockIdx.x * blockDim.x + threadIdx.x;
+		int y = blockIdx.y * blockDim.y + threadIdx.y;
 		int index = x + width * y;
-		
-		devParams.screen[x + devParams.width * y] = Color4(0,0,0,0);
-		
-		curand_init(seed,index,0,&randState[index]);
 
-		Scene *scene = devParams.scene;
-
-		float dx = 1.0f / devParams.width;
-		float dy = 1.0f / devParams.height;
+		if (x >= width || y >= height)
+		{
+			return;
+		}
 		
-		float i = 2.0f*(float(x)+curand_uniform(&randState[index]))*dx - 1.0f;
-		float j = 2.0f*(float(y)+curand_uniform(&randState[index]))*dy - 1.0f;
+		
+		//curand_init(seed,index,0,&randState[index]);
+
+		Scene *scene = (Scene*)devParams;
+
+		float dx = 1.0f / width;
+		float dy = 1.0f / height;
+		
+		float i = 2.0f*(float(x) + 0.5f)*dx - 1.0f;//2.0f*(float(x)+curand_uniform(&randState[index]))*dx - 1.0f;
+		float j = 2.0f*(float(y) + 0.5f)*dy - 1.0f;//2.0f*(float(y) + curand_uniform(&randState[index]))*dy - 1.0f;
 
 		
 		Ray r;
 		r.o = scene->camera.position;
 		r.d = get_pixel_dir(scene->camera, i, j);
-		 
+		
+		if (false && x == width - 1 && y == height - 1)
+		{
+			printf("pos: (%f, %f, %f), dir: (%f, %f, %f)\n", r.o.x, r.o.y, r.o.z, r.d.x, r.d.y, r.d.z);
+			for (int i = 0; i < scene->materials.size(); i++)
+			{
+				Color3 &c = scene->materials[i].diffuse;
+				printf("Diffuse: %f, %f, %f, %f\n", c.r, c.g, c.b);
+			}
+		}
+
 		HitInfo info;
-		Color4 contribution;
+		info.t = FLT_MAX;
+		Color4 contribution = Color4(1, 0, 0, 1);
+		
 		if(scene->intersect(r,info))
 		{
-			contribution = Color4(scene->materials[info.materialIndex].diffuse,1);
+			if (info.materialIndex < 0 || info.materialIndex >= scene->materials.size())
+				printf("whaaaat %d\n", info.materialIndex);
+			Color3 &c = scene->materials[info.materialIndex].diffuse;
+			//printf("Diffuse: %f, %f, %f, %f\n", c.r, c.g, c.b);
+			contribution = Color4(c,1);
 		}
-		else
-		{
-			contribution = Color4(0,0,0,1);
-		}
-		
-		devParams.screen[index] = contribution;
+
+		screen[index] = contribution;
 	}
 
 	void Renderer::render()
 	{
 		// bind draw buffer to device ptr
-		cudaGLMapBufferObject((void**)&devParams.screen, drawBuffer);
-		
+		Color4 *screen;
+		cudaError_t err = cudaGLMapBufferObject((void**)&screen, drawBuffer);
+		if (err != cudaSuccess)
+		{
+			std::cerr << "cudaGLMapBufferObject: " << cudaGetErrorName(err) << std::endl;
+		}
+
 		// call kernel to render pixels then draw to screen
-		dim3 block(16,16,1);
-		dim3 grid(dim.x / block.x, dim.y / block.y, 1);
-		
-		scatterTrace<<<grid,block>>>(cuRandStates,glutGet(GLUT_ELAPSED_TIME));
-		
+		dim3 block(16,16);
+		dim3 grid((dim.x + block.x - 1) / block.x, (dim.y + block.y - 1) / block.y);
+
+		scatterTrace<<<grid,block>>>(screen/*,cuRandStates,glutGet(GLUT_ELAPSED_TIME)*/);
+		cudaDeviceSynchronize();
+
 		// unbind draw buffer so openGL can use
 		cudaGLUnmapBufferObject(drawBuffer);
 
 		// create texture from draw buffer
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, drawBuffer);
-
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA32F, GL_FLOAT, nullptr);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA, GL_FLOAT, nullptr);
+		GLenum glErr = glGetError();
+		if (glErr != GL_NO_ERROR)
+		{
+			std::cerr << "glTexImage2D: " << gluErrorString(glErr) << std::endl;
+		}
 
 		// draw fullscreen quad
 		glBegin(GL_QUADS);

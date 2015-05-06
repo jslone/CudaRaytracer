@@ -97,6 +97,13 @@ namespace acr
 	__host__
 	void Scene::loadMaterials(const aiScene* scene)
 	{
+		thrust::host_vector<Material> mats(scene->mMaterials, scene->mMaterials + scene->mNumMaterials);
+		for (auto&& mat : mats)
+		{
+			Color3 &c = mat.diffuse;
+			printf("Diffuse: %f, %f, %f, %f\n", c.r, c.g, c.b);
+		}
+
 		materials = vector<Material>(thrust::host_vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials));
 	}
 	
@@ -125,6 +132,7 @@ namespace acr
 	{
 		thrust::host_vector<Object> objs;
 		rootIndex = loadObject(scene->mRootNode, NULL, objs, camName, lightMap, hLights);
+		std::cout << rootIndex << std::endl;
 		objects = vector<Object>(objs);
 	}
 
@@ -137,29 +145,37 @@ namespace acr
 		tmp.meshes.clear();
 		tmp.children.clear();
 
-		// Get handle to data actually in vector
-		Object &obj = objs[tmp.index];
-		
+		int i = tmp.index;
+
 		// Check to see if these objects are lights or cameras
 		std::string name = std::string(node->mName.C_Str());
+
+		math::vec3 pos = math::vec3(tmp.globalTransform * math::vec4(0, 0, 0, 1));
+		std::cout << name << ": " << pos.x << "," << pos.y << "," << pos.z << std::endl;
+
 		auto light_got = lightMap.find(name);
 
 		if (light_got != lightMap.end())
 		{
 			int lIndex = light_got->second;
 			Light &l = hLights[lIndex];
-			l.position = math::vec3(obj.globalTransform * math::vec4(l.position, 1.0));
+			l.position = math::vec3(objs[i].globalTransform * math::vec4(l.position, 1.0));
+		}
+
+		if (name == camName)
+		{
+			camera.position = math::vec3(tmp.globalTransform * math::vec4(camera.position,1.0f));
 		}
 		
 		// Load children
 		thrust::host_vector<int> children(node->mNumChildren);
 		for(int i = 0; i < node->mNumChildren; i++)
 		{
-			children[i] = loadObject(node->mChildren[i], &obj, objs, camName, lightMap, hLights);
+			children[i] = loadObject(node->mChildren[i], &tmp, objs, camName, lightMap, hLights);
 		}
-		obj.children = vector<int>(children);
+		objs[i].children = vector<int>(children);
 		
-		return obj.index;
+		return i;
 	}
 
 	bool Scene::intersect(const Ray &r, HitInfo &info)
@@ -178,7 +194,7 @@ namespace acr
 		horizontalFOV = cam->mHorizontalFOV;
 		position = getVec3(cam->mPosition);
 		up = getVec3(cam->mUp);
-		forward = math::normalize(getVec3(cam->mLookAt) - position);
+		forward = getVec3(cam->mLookAt);
 	}
 
 	Light::Light(const aiLight *aiLight)
@@ -251,7 +267,7 @@ namespace acr
 		bool intersected = false;
 		for (int i = 0; i < meshes.size(); i++)
 		{
-			intersected = meshMap[meshes[i]].intersect(r, info);
+			intersected = meshMap[meshes[i]].intersect(lr, info);
 		}
 
 		// transform to world space

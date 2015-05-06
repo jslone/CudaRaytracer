@@ -9,7 +9,54 @@ namespace acr
 	namespace math
 	{
 		using namespace glm;
-		
+
+		GLM_FUNC_QUALIFIER
+		float fastersin(float x)
+		{
+			float fouroverpi = 1.2732395447351627f;
+			float fouroverpisq = 0.40528473456935109f;
+			float q = 0.77633023248007499f;
+			union { float f; uint32_t i; } p = { 0.22308510060189463f };
+
+			union { float f; uint32_t i; } vx = { x };
+			uint32_t sign = vx.i & 0x80000000;
+			vx.i &= 0x7FFFFFFF;
+
+			float qpprox = fouroverpi * x - fouroverpisq * x * vx.f;
+
+			p.i |= sign;
+
+			return qpprox * (q + p.f * qpprox);
+		}
+
+		GLM_FUNC_QUALIFIER
+		float fastercos(float x)
+		{
+			float twooverpi = 0.63661977236758134f;
+			float p = 0.54641335845679634f;
+
+			union { float f; uint32_t i; } vx = { x };
+			vx.i &= 0x7FFFFFFF;
+
+			float qpprox = 1.0f - twooverpi * vx.f;
+
+			return qpprox + p * qpprox * (1.0f - qpprox * qpprox);
+		}
+
+		GLM_FUNC_QUALIFIER
+		float fastertanfull(float x)
+		{
+			float twopi = 6.2831853071795865f;
+			float invtwopi = 0.15915494309189534f;
+
+			int k = x * invtwopi;
+			float half = (x < 0) ? -0.5f : 0.5f;
+			float xnew = x - (half + k) * twopi;
+
+			return fastersin(xnew) / fastercos(xnew);
+		}
+
+
 		template<typename genType>
 		GLM_FUNC_QUALIFIER genType epsilon()
 		{

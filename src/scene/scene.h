@@ -20,7 +20,7 @@ namespace acr
 		Object(const Object &obj);
 		Object(Object &obj);
 
-		char name[16];
+		char name[64];
 		int index;
 		int parentIndex;
 		
