@@ -236,7 +236,9 @@ namespace acr
 		Color4 contribution = Color4(0, 0, 0, 1);
 		if(scene->intersect(r,info))
 		{
-			Color3 &c = scene->materials[info.materialIndex].diffuse;
+			Material &mat = scene->materials[info.materialIndex];
+			Color3 c = mat.ambient
+					+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal);
 			contribution = Color4(c, 1);
 		}
 

@@ -193,6 +193,44 @@ namespace acr
 		return intersected;
 	}
 
+	Color3 Scene::pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm)
+	{
+		math::vec3 dir = l.position - pos;
+		float t = math::length(dir);
+
+		dir = normalize(dir);
+
+		float cosTheta = math::max(math::dot(dir, norm), 0.0f);
+		Color3 c = cosTheta / (l.attConstant + (l.attLinear + l.attQuadratic*t)*t) * l.diffuse;
+		//printf("%f, (%f,%f,%f), (%f,%f,%f), (%f,%f,%f)\n", cosTheta, c.r, c.g, c.b, norm.x, norm.y, norm.z, dir.x, dir.y, dir.z);
+		//if (math::length(c) < 0.01f) return c;
+
+		Ray r;
+		r.o = pos;
+		r.d = dir;
+		HitInfo info;
+		return !(intersect(r, info) && info.t < t) ? c : Color3(0,0,0);
+	}
+
+	Color3 Scene::lightPoint(const math::vec3 &pos, const math::vec3 &norm)
+	{
+		Color3 light(0, 0, 0);
+		for (int i = 0; i < lights.size(); i++)
+		{
+			const Light &l = lights[i];
+			light += pointLightAccum(l, pos, norm);
+			switch (l.type)
+			{
+				case Light::Type::DIRECTIONAL:
+				case Light::Type::SPOT:
+				case Light::Type::POINT:
+					
+					break;
+			}
+		}
+		return light;
+	}
+
 	Camera::Camera(const aiCamera *cam)
 	{
 		aspectRatio = cam->mAspect;
@@ -285,9 +323,11 @@ namespace acr
 			tmpInfo.point.normal = math::translaten(globalNormalTransform, tmpInfo.point.normal);
 
 			float t = math::length(tmpInfo.point.position - r.o);
-
-			info = tmpInfo;
-			info.t = t;
+			if (t < info.t)
+			{
+				info = tmpInfo;
+				info.t = t;
+			}
 		}
 
 		return intersected;

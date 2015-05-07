@@ -65,8 +65,6 @@ namespace acr
 
 		float innerConeAngle;
 		float outerConeAngle;
-		
-		float getFlux(math::vec3 position);
 	};
 	
 	class Scene
@@ -84,6 +82,12 @@ namespace acr
 
 		__host__ __device__
 		bool intersect(const Ray& r, HitInfo &info);
+
+		__host__ __device__
+		Color3 lightPoint(const math::vec3 &pos, const math::vec3 &norm);
+
+		__host__ __device__
+		Color3 pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm);
 	private:
 		void loadScene(const aiScene* scene);
 		void loadLights(const aiScene* scene, thrust::host_vector<Light> &hLights, std::unordered_map<std::string,int> &lightMap);
