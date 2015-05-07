@@ -70,6 +70,7 @@ namespace acr
 		template<typename genType>
 		GLM_FUNC_QUALIFIER genType epsilon()
 		{
+			return genType(0.001f);
 			genType v = genType(1.0f);
 			(*((int*)&v))++;
 			return v - genType(1.0f);
@@ -115,6 +116,54 @@ namespace acr
 			baryPosition.z = f * glm::dot(e2, q);
 
 			return baryPosition.z >= typename genType::value_type(0.0f);
+		}
+
+		GLM_FUNC_QUALIFIER bool myIntersectRayTriangle(const vec3 &ro, const vec3 rd, const vec3 &a, const vec3 &b, const vec3 &c, vec3 &baryCoords, float &t)
+		{
+			vec3 e1, e2;
+			vec3 P, Q, T;
+			float det, invDet, eps;
+
+			e1 = b - a;
+			e2 = c - a;
+
+			P = cross(rd, e2);
+			det = dot(e1, P);
+
+			eps = epsilon<float>();
+
+			if (-eps < det && det < eps) // i.e. zero
+			{
+				return false;
+			}
+
+			invDet = 1.0f / det;
+
+			T = ro - a;
+
+			baryCoords.y = dot(T, P) * invDet;
+			if (baryCoords.y < 0 || baryCoords.y > 1)
+			{
+				return false;
+			}
+
+			Q = cross(T, e1);
+
+			baryCoords.z = dot(rd, Q) * invDet;
+			baryCoords.x = 1 - (baryCoords.y + baryCoords.z);
+
+			if (baryCoords.z < 0 || baryCoords.x < 0)
+			{
+				return false;
+			}
+
+			t = dot(e2, Q) * invDet;
+			if (t < eps)
+			{
+				return false;
+			}
+
+			return true;
 		}
 
 		GLM_FUNC_QUALIFIER vec3 translate(const mat4 &m, const vec3 &v)

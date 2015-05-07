@@ -208,8 +208,13 @@ namespace acr
 		Ray r;
 		r.o = pos;
 		r.d = dir;
+
 		HitInfo info;
-		return !(intersect(r, info) && info.t < t) ? c : Color3(0,0,0);
+		if (intersect(r, info) && info.t < t)
+		{
+			//return Color3(0, 0, 0);
+		}
+		return c;
 	}
 
 	Color3 Scene::lightPoint(const math::vec3 &pos, const math::vec3 &norm)

@@ -238,7 +238,7 @@ namespace acr
 		{
 			Material &mat = scene->materials[info.materialIndex];
 			Color3 c = mat.ambient
-					+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal);
+				+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal);
 			contribution = Color4(c, 1);
 		}
 

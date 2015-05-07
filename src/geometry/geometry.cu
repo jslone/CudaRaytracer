@@ -54,12 +54,11 @@ namespace acr
 			const math::vec3 &b = v1.position;
 			const math::vec3 &c = v2.position;
 			math::vec3 bCoords;
+			float t;
 
-			if (math::intersectRayTriangle(r.o, r.d, a, b, c, bCoords))
+			if (math::myIntersectRayTriangle(r.o, r.d, a, b, c, bCoords, t))
 			{
 				math::vec3 position = bCoords.x*a + bCoords.y*(b-a) + bCoords.z*(c-a);
-
-				float t = math::length(position - r.o);
 
 				if (t < info.t)
 				{
@@ -70,6 +69,8 @@ namespace acr
 					info.point.normal = bCoords.x * v0.normal + bCoords.y * v1.normal + bCoords.z * v2.normal;
 					info.point.color = bCoords.x * v0.color + bCoords.y * v1.color + bCoords.z * v2.color;
 					info.materialIndex = materialIndex;
+
+					//printf("bary: (%f,%f,%f), norm: (%f,%f,%f)\n", bCoords.x, bCoords.y, bCoords.z, info.point.normal.x, info.point.normal.y, info.point.normal.z);
 				}
 			}
 		}
