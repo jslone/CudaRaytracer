@@ -25,6 +25,13 @@ Here is a sneak peak of a few different scenes our real-time raytracer has rende
 #### Transparent Scene
 ![Transparent Render](images/transparent2.PNG "Transparent Render")
 
+#### Video Preview
+<video width="800" height="600" controls>
+  <source src="videos/sneak.mp4" type="video/mp4">
+  <source src="videos/sneak.ogg" type="video/ogg">
+Your browser does not support the video tag.
+</video>
+
 # Final Steps
 
 * Finish up final visual features of raytracer.
