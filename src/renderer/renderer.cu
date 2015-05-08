@@ -7,46 +7,48 @@ namespace acr
 {
 	struct DevParams
 	{
-		Scene *scene;
-		Color4 *screen;
 		char sceneData[sizeof(Scene)];
 		uint32_t width,height,samples;
 	};
 
 	__constant__
-	DevParams devParams;
+	DevParams devParams[1];
+	
+	Renderer *renderer;
+	void globalRender()
+	{
+		renderer->render();
+	}
 
 	Renderer::Renderer(const Renderer::Args &args)
 		: title(args.title)
 		, dim(args.dim)
+		, framesNoMove(0)
 	{
-		// sdl initialization
-		if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
+		renderer = this;
+
+		/* Create window */
+		glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+		glutInitWindowSize(dim.x, dim.y);
+
+		dim.x *= dim.z;
+		dim.y *= dim.z;
+		dim.z = 1;
+
+		winId = glutCreateWindow(title);
+
+		GLenum err = glewInit();
+		if (err != GLEW_OK)
 		{
-			std::cerr << "SDL_InitSubSystem Error: " << SDL_GetError() << std::endl;
+			std::cerr << "glewInit: " << glewGetErrorString(err) << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
-		window = SDL_CreateWindow(title, args.pos.x, args.pos.y,
-								  dim.x, dim.y, SDL_WINDOW_OPENGL);
-		if (window == nullptr)
-		{
-			std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
-			exit(EXIT_FAILURE);
-		}
+		glutDisplayFunc(globalRender);
 
-		renderer = SDL_CreateRenderer(window, -1, 0);
-		if (renderer == nullptr)
-		{
-			std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
-			exit(EXIT_FAILURE);
-		}
-
-		// open gl initialization
-		glCtx = SDL_GL_CreateContext(window);
-		
 		/* Set the clear color. */
-		glClearColor( 0, 0, 0, 0 );
+		glClearColor( 0, 0, 0, 1 );
+		glClear(GL_COLOR_BUFFER_BIT);
 
 		/* Setup our viewport. */
 		glViewport( 0, 0, dim.x, dim.y );
@@ -61,12 +63,12 @@ namespace acr
 
 		// cuda interop initialization
 		uint32_t numDevices;
-		uint32_t maxNumDevices = 1;
+		const uint32_t maxNumDevices = 1;
 		int devices[maxNumDevices];
 		cudaError_t cudaErr = cudaGLGetDevices(&numDevices, devices, maxNumDevices, cudaGLDeviceListAll);
 		if(cudaErr != cudaSuccess)
 		{
-			std::cout << "cudaGLGetDevices: ";
+			std::cout << "cudaGLGetDevices[" << cudaErr << "]: ";
 			switch(cudaErr)
 			{
 				case cudaErrorNoDevice:
@@ -98,7 +100,7 @@ namespace acr
 
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, drawBuffer);
 
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, dim.x * dim.y * dim.z * sizeof(Color4), NULL, GL_DYNAMIC_COPY);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, dim.x * dim.y * sizeof(Color4), NULL, GL_DYNAMIC_COPY);
 
 		cudaGLRegisterBufferObject(drawBuffer);
 
@@ -108,40 +110,60 @@ namespace acr
 		
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, dim.x, dim.y, 0, GL_RGBA32F, GL_FLOAT, nullptr);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dim.x, dim.y, 0, GL_RGBA, GL_FLOAT, nullptr);
 
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-
-		cudaMalloc((void**)&cuRandStates, sizeof(curandState) * dim.x * dim.y * dim.z);
+		
+		float fLargest;
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
 	}
 
 	Renderer::~Renderer()
 	{
-		if (renderer)
-		{
-			SDL_DestroyRenderer(renderer);
-		}
-		if (window)
-		{
-			SDL_DestroyWindow(window);
-		}
+		glutDestroyWindow(winId);
+	}
+
+	void Renderer::moveCamera(const math::vec2 &pos, const math::vec2 &dir)
+	{
+		DevParams param;
+		cudaMemcpyFromSymbol(&param, devParams, sizeof(DevParams));
+
+		Scene *scene = (Scene*)&param;
+
+		scene->camera.forward = math::rotate(scene->camera.forward, dir.x, scene->camera.up);
+
+		math::vec3 right = math::cross(scene->camera.forward, scene->camera.up);
+
+		scene->camera.forward = math::rotate(scene->camera.forward, dir.y, right);
+		scene->camera.up = math::rotate(scene->camera.up, dir.y, right);
+
+		math::vec3 delta = scene->camera.forward * pos.y + right * pos.x;
+
+		scene->camera.position += delta;
+
+		cudaMemcpyToSymbol(devParams, &param, sizeof(DevParams));
+
+		framesNoMove = 0;
 	}
 
 	void Renderer::loadScene(const Scene &scene)
 	{
 		DevParams params;
-		params.scene = (Scene*)(&devParams.sceneData[0]);
 		std::memcpy(params.sceneData, &scene, sizeof(Scene));
 		params.width = dim.x;
 		params.height = dim.y;
 		params.samples = dim.z;
 
-		cudaMemcpyToSymbol(&devParams, &params, sizeof(DevParams));
+		Scene *myScene = (Scene*)&params;
+		myScene->camera.aspectRatio = float(dim.x) / float(dim.y);
+
+		cudaMemcpyToSymbol(devParams, &params, sizeof(DevParams));
 	}
 
-	__device__ __host__
-	math::vec3 get_pixel_dir(const Camera &camera, int ni, int nj)
+	__device__
+	math::vec3 get_pixel_dir(const Camera &camera, float ni, float nj)
 	{
 
 		math::vec3 dir;
@@ -159,77 +181,172 @@ namespace acr
 		cR = math::cross(dir, up);
 		cU = math::cross(cR, dir);
 		pos = camera.position;
-		dist = math::tan(camera.horizontalFOV/2.0);
+		dist = math::fastertanfull(camera.horizontalFOV/2.0f);
 		
 		return math::normalize(dir + dist*(float(nj)*cU + AR*float(ni)*cR));
 	}
 
-	__global__
-	void scatterTrace(curandState *randState, unsigned long seed)
+	__device__
+	math::vec3 get_pixel_pos(const Camera &camera, float ni, float nj)
 	{
-		const int width = devParams.width;
-		const int height = devParams.height;
-		const int samples = devParams.samples;
 
-		int x = blockIdx.x * gridDim.x + threadIdx.x;
-		int y = blockIdx.y * gridDim.y + threadIdx.y;
-		int sample = blockIdx.z * gridDim.z + threadIdx.z;
-		int index = sample + samples * x + (samples * width) * y;
-		
-		devParams.screen[x + devParams.width * y] = Color4(0,0,0,0);
-		
-		curand_init(seed,index,0,&randState[index]);
+		math::vec3 dir;
+		math::vec3 up;
+		float AR;
 
-		Scene *scene = devParams.scene;
+		math::vec3 cR;
+		math::vec3 cU;
+		float dist;
+		math::vec3 pos;
 
-		float dx = 1.0f / devParams.width;
-		float dy = 1.0f / devParams.height;
-		
-		float i = 2.0f*(float(x)+curand_uniform(&randState[index]))*dx - 1.0f;
-		float j = 2.0f*(float(y)+curand_uniform(&randState[index]))*dy - 1.0f;
+		dir = camera.forward;
+		up = camera.up;
+		AR = camera.aspectRatio;
+		cR = math::cross(dir, up);
+		cU = math::cross(cR, dir);
+		pos = camera.position;
+		dist = math::fastertanfull(camera.horizontalFOV / 2.0f);
 
+		return camera.position + dist*(float(nj)*cU + AR*float(ni)*cR);
+	}
+
+	template<int N>
+	__device__ inline
+	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state);
+
+	template<int N>
+	__device__ inline
+	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state)
+	{
+		HitInfo info;
+		info.t = FLT_MAX;
+		Color4 contribution = Color4(0, 0, 0, 1);
+		if (scene->intersect(r, info))
+		{
+			Material &mat = scene->materials[info.materialIndex];
+			
+			// direct illum
+			Color3 c = mat.ambient
+					+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal, state);
+
+			// indirect illum
+			Color3 nSource;
+			Ray nr;
+			nr.o = info.point.position;
+
+			Color3 cd = source * mat.diffuse;
+			Color3 cs = source * mat.specular;
+
+			float Pd = math::compMax(cd) / math::compMax(source);
+			float Ps = math::compMax(cs) / math::compMax(source);
+
+			float P = curand_uniform(&state);
+			// Diffuse bounce
+			if (P < Pd)
+			{
+				nSource = cd * (1 / Pd);
+				nr.d = math::randomHemi(info.point.normal, &state);
+			}
+			// Specular bounce
+			else if (P < Pd + Ps)
+			{
+				nSource = cs * (1 / Ps);
+				nr.d = math::reflect(r.d, info.point.normal);
+			}
+			// Absorbtion
+			else
+			{
+				return Color4(c, 1);
+			}
+
+			contribution = Color4(c, 1) + rayColor<N - 1>(nr, nSource, scene, state);
+		}
+		return contribution;
+	}
+
+	template<>
+	__device__ inline
+	Color4 rayColor<0>(const Ray &r, const Color3 source, Scene *scene, curandState state)
+	{
+		return Color4(0, 0, 0, 1);
+	}
+
+	__global__
+	void scatterTrace(Color4 *screen, unsigned long seed, uint64_t frames)
+	{
+		const int width = devParams->width;
+		const int height = devParams->height;
+
+		int x = blockIdx.x * blockDim.x + threadIdx.x;
+		int y = blockIdx.y * blockDim.y + threadIdx.y;
+		int index = x + width * y;
+
+		if (x >= width || y >= height)
+		{
+			return;
+		}
 		
+		curandState state;
+		curand_init(index + seed, 0, 0, &state);
+
+		Scene *scene = (Scene*)devParams;
+
+		float dx = 1.0f / width;
+		float dy = 1.0f / height;
+		
+		float i = 2.0f*(float(x) + curand_uniform(&state))*dx - 1.0f;
+		float j = 2.0f*(float(y) + curand_uniform(&state))*dy - 1.0f;
+
 		Ray r;
 		r.o = scene->camera.position;
-		r.d = get_pixel_dir(scene->camera, i, j);
-		 
-		HitInfo info;
-		Color4 contribution;
-		if(scene->intersect(r,info))
+		r.d = get_pixel_dir(scene->camera, i, -j);
+
+		Color4 contribution = rayColor<2>(r, Color3(1,1,1), scene, state);
+		
+		if (frames > 0)
 		{
-			contribution = Color4(scene->materials[info.materialIndex].diffuse,1);
+			screen[index] *= (float(frames) / float(frames + 1));
+			screen[index] += (contribution / float(frames + 1));
 		}
 		else
 		{
-			contribution = Color4(0,0,0,1);
-		}
-		
-		for(int i = 0; i < 4; i++)
-		{
-			atomicAdd(&devParams.screen[x + devParams.width * y][i], contribution[i] / devParams.samples);
+			screen[index] = contribution;
 		}
 	}
 
 	void Renderer::render()
 	{
 		// bind draw buffer to device ptr
-		cudaGLMapBufferObject((void**)&devParams.screen, drawBuffer);
-		
+		Color4 *screen;
+		cudaError_t err = cudaGLMapBufferObject((void**)&screen, drawBuffer);
+		if (err != cudaSuccess)
+		{
+			std::cerr << "cudaGLMapBufferObject: " << cudaGetErrorName(err) << std::endl;
+		}
+
 		// call kernel to render pixels then draw to screen
-		dim3 block(4,4,16);
-		dim3 grid(dim.x / block.x, dim.y / block.y, dim.z / block.z);
-		
-		scatterTrace<<<grid,block>>>(cuRandStates,SDL_GetTicks());
-		
+		dim3 block(16,16);
+		dim3 grid((dim.x + block.x - 1) / block.x, (dim.y + block.y - 1) / block.y);
+
+		//std::cout << "frame count: " << framesNoMove << std::endl;
+		scatterTrace<<<grid,block>>>(screen,rand(),framesNoMove);
+		cudaDeviceSynchronize();
+		framesNoMove++;
+
 		// unbind draw buffer so openGL can use
 		cudaGLUnmapBufferObject(drawBuffer);
 
 		// create texture from draw buffer
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, drawBuffer);
-
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureId);
 
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA32F, GL_FLOAT, nullptr);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim.x, dim.y, GL_RGBA, GL_FLOAT, nullptr);
+		GLenum glErr = glGetError();
+		if (glErr != GL_NO_ERROR)
+		{
+			std::cerr << "glTexImage2D: " << gluErrorString(glErr) << std::endl;
+		}
 
 		// draw fullscreen quad
 		glBegin(GL_QUADS);
@@ -244,7 +361,8 @@ namespace acr
 		glEnd();
 		
 		// swap buffers
-		SDL_GL_SwapWindow(window);
+		glutSwapBuffers();
+		glutPostRedisplay();
 	}
 
 }

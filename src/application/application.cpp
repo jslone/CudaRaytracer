@@ -1,19 +1,71 @@
 #include <iostream>
+#include <time.h>
 #include "application.h"
+#include <GL/glew.h>
+#include <GL/glut.h>
 
 namespace acr
 {
+	Application *app;
+
+	const float movSpeed = 0.5f;
+	void keyboardCB( unsigned char key, int x, int y )
+	{
+  		switch ( key )
+		{
+			case 'w':
+				app->renderer.moveCamera(math::vec2(0, 1)*movSpeed, math::vec2(0,0));
+				break;
+			case 'a':
+				app->renderer.moveCamera(math::vec2(-1, 0)*movSpeed, math::vec2(0, 0));
+				break;
+			case 's':
+				app->renderer.moveCamera(math::vec2(0, -1)*movSpeed, math::vec2(0, 0));
+				break;
+			case 'd':
+				app->renderer.moveCamera(math::vec2(1, 0)*movSpeed, math::vec2(0, 0));
+				break;
+			case 27: // Escape key
+				exit (0);
+				break;
+		}
+		glutPostRedisplay();
+	}
+
+	bool shouldRot = false;
+	math::vec2 mousePos(-1, -1);
+
+	void mousePressCB(int button, int state, int x, int y)
+	{
+		mousePos.x = x;
+		mousePos.y = y;
+		shouldRot = state == GLUT_DOWN;
+	}
+	
+	const float rotSpeed = 1.0f / 1000.0f;
+
+	void mouseMoveCB(int x, int y)
+	{
+		math::vec2 nextPos(x, y);
+
+		if (shouldRot)
+		{
+			math::vec2 delta = (nextPos - mousePos) * rotSpeed;
+			delta.x *= -1;
+			app->renderer.moveCamera(math::vec2(0, 0), delta);
+		}
+		mousePos = nextPos;
+	}
 
 	Application::Application(const Args args)
-		: sdl() 
-		,	renderer(args.renderer)
+		: renderer(args.renderer)
 		, scene(args.scene)
 		, frameRate(args.frameRate)
 	{
-		if(SDL_InitSubSystem(SDL_INIT_TIMER | SDL_INIT_EVENTS))
-		{
-			std::cout << "SDL_InitSubSystem error: " << SDL_GetError() << std::endl;
-		}
+		glutKeyboardFunc(keyboardCB);
+		glutMotionFunc(mouseMoveCB);
+		glutMouseFunc(mousePressCB);
+		app = this;
 	}
 
 	Application::~Application()
@@ -21,68 +73,12 @@ namespace acr
 
 	void Application::start()
 	{
+		srand(time(nullptr));
+
 		std::cout << "Starting application..." << std::endl;
 		running = true;
 		renderer.loadScene(scene);
-		run();
-	}
-
-	void Application::quit()
-	{
-		running = false;
-	}
-
-	void Application::run()
-	{
-		int32_t lagTime = 0;
-		lastTick = SDL_GetTicks();
-
-		while (running)
-		{
-			int32_t startTime = SDL_GetTicks(); // lastTick;
-
-			// Do stuff
-			handle_events();
-
-			// Sleep to avoid going over frameRate
-			int32_t period = 1000 / frameRate;
-			int32_t endTime = SDL_GetTicks();
-			int32_t deltaTime = endTime - startTime;
-			int32_t sleepTime = period - deltaTime - lagTime;
-			int32_t wakeTime = endTime + sleepTime;
-
-			std::cout << "deltaTime: " << endTime - lastTick << std::endl;
-
-			// Update last tick so we know when this frame ended
-			lastTick = endTime;
-
-			// Sleep until period is up
-			do
-			{
-				SDL_Delay(math::max(sleepTime, 1));
-				sleepTime = wakeTime - SDL_GetTicks();
-			}
-			while (sleepTime > 0);
-
-			// Update lag time with how much we overslept
-			lagTime = -sleepTime;
-		}
-	}
-
-	void Application::handle_events()
-	{
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
-			switch (event.type)
-			{
-				case SDL_QUIT:
-					quit();
-					break;
-				default:
-					break;
-			}
-		}
+		glutMainLoop();
 	}
 
 } // namespace acr
@@ -90,6 +86,8 @@ namespace acr
 
 int main(int argc, char **argv)
 {
+	glutInit(&argc,argv);
+
 	// Setup
 	acr::Application::Args args;
 	args.renderer.title = "CudaRenderer";
@@ -97,7 +95,7 @@ int main(int argc, char **argv)
 	args.renderer.pos.y = 0;
 	args.renderer.dim.x = 800;
 	args.renderer.dim.y = 600;
-	args.renderer.dim.z = 16;
+	args.renderer.dim.z = 1;
 	args.frameRate = 60;
 	args.scene.filePath = argv[1]; //!!!! Should check for argc bound
 	// Start the app

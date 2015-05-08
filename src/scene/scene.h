@@ -20,7 +20,7 @@ namespace acr
 		Object(const Object &obj);
 		Object(Object &obj);
 
-		char name[16];
+		char name[64];
 		int index;
 		int parentIndex;
 		
@@ -28,10 +28,10 @@ namespace acr
 		vector<int> meshes;
 		math::mat4 globalTransform;
 		math::mat4 localTransform;
-		math::mat4 globalNormalTransform;
+		math::mat3 globalNormalTransform;
 
 		math::mat4 globalInverseTransform;
-		math::mat4 globalInverseNormalTransform;
+		math::mat3 globalInverseNormalTransform;
 		
 		__host__ __device__
 		bool intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshes);
@@ -65,8 +65,6 @@ namespace acr
 
 		float innerConeAngle;
 		float outerConeAngle;
-		
-		float getFlux(math::vec3 position);
 	};
 	
 	class Scene
@@ -82,8 +80,18 @@ namespace acr
 		Scene(const Args &args);
 		~Scene();
 
-		__host__ __device__
+		__device__
 		bool intersect(const Ray& r, HitInfo &info);
+
+		__device__
+		Color3 lightPoint(const math::vec3 &pos, const math::vec3 &norm, curandState &state);
+
+		__device__
+		Color3 pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state);
+
+		__host__ __device__
+		Color3 spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm);
+
 	private:
 		void loadScene(const aiScene* scene);
 		void loadLights(const aiScene* scene, thrust::host_vector<Light> &hLights, std::unordered_map<std::string,int> &lightMap);

@@ -3,13 +3,9 @@
 
 
 #include <GL/glew.h>
+#include <GL/glut.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
-
-#include <SDL.h>
-
-#include <curand.h>
-#include <curand_kernel.h>
 
 #include "math/math.h"
 #include "scene/scene.h"
@@ -36,19 +32,18 @@ namespace acr
 		void loadScene(const Scene &scene);
 
 		void render();
+		void moveCamera(const math::vec2 &pos, const math::vec2 &dir);
 	private:
-		SDL_Window *window;
-		SDL_Renderer *renderer;
-		SDL_GLContext glCtx;
 
+		int winId;
+		
 		const char *title;
 		math::u32vec3 dim;
 
 		GLuint drawBuffer;
 		GLuint textureId;
 
-		curandState *cuRandStates;
-
+		uint64_t framesNoMove;
 	};
 
 } // namespace acr

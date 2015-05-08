@@ -11,24 +11,24 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(libs/glm)
-add_subdirectory(libs/sdl2)
 add_subdirectory(libs/assimp)
 add_subdirectory(libs/glew/build/cmake)
+add_subdirectory(libs/FreeGLUT/freeglut/freeglut)
 
 include_directories(
-	${CMAKE_SOURCE_DIR}/libs/sdl2/include
 	${CMAKE_SOURCE_DIR}/libs/glm/glm
 	${CMAKE_SOURCE_DIR}/libs/assimp/include
 	${CMAKE_SOURCE_DIR}/libs/glew/include
+	freeglut
 	${CMAKE_SOURCE_DIR}
 )
 
 find_package(OpenGL QUIET REQUIRED)
 
 link_libraries(
-	SDL2
 	assimp
 	glew
+	freeglut
 	${OPENGL_LIBRARIES}
 )
 
@@ -36,7 +36,7 @@ find_package(CUDA QUIET REQUIRED)
 
 set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
 set(CUDA_SEPARABLE_COMPILATION ON)
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-std=c++11 -O3")
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-std=c++11")
 
 include_directories(${CUDA_INCLUDE_DIRS})
 

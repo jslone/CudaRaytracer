@@ -97,6 +97,13 @@ namespace acr
 	__host__
 	void Scene::loadMaterials(const aiScene* scene)
 	{
+		thrust::host_vector<Material> mats(scene->mMaterials, scene->mMaterials + scene->mNumMaterials);
+		for (auto&& mat : mats)
+		{
+			Color3 &c = mat.diffuse;
+			std::cout << "Diffuse: " << math::to_string(c) << std::endl;
+		}
+
 		materials = vector<Material>(thrust::host_vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials));
 	}
 	
@@ -125,6 +132,7 @@ namespace acr
 	{
 		thrust::host_vector<Object> objs;
 		rootIndex = loadObject(scene->mRootNode, NULL, objs, camName, lightMap, hLights);
+		std::cout << rootIndex << std::endl;
 		objects = vector<Object>(objs);
 	}
 
@@ -137,29 +145,44 @@ namespace acr
 		tmp.meshes.clear();
 		tmp.children.clear();
 
-		// Get handle to data actually in vector
-		Object &obj = objs[tmp.index];
-		
+		int i = tmp.index;
+
 		// Check to see if these objects are lights or cameras
 		std::string name = std::string(node->mName.C_Str());
+
+		math::vec3 pos = math::translate(tmp.globalTransform, math::vec3(0, 0, 0));
+		std::cout << name << ": " << math::to_string(pos) << std::endl;
+		//std::cout << name << " transform: " << math::to_string(tmp.globalTransform) << std::endl;
+		//std::cout << name << " normal trans: " << math::to_string(tmp.globalNormalTransform) << std::endl;
+
 		auto light_got = lightMap.find(name);
 
 		if (light_got != lightMap.end())
 		{
 			int lIndex = light_got->second;
 			Light &l = hLights[lIndex];
-			l.position = math::vec3(obj.globalTransform * math::vec4(l.position, 1.0));
+			l.position = math::translate(objs[i].globalTransform, l.position);
+			l.direction = math::translaten(tmp.globalNormalTransform, l.direction);
+			std::cout << light_got->first << " pos: " << math::to_string(l.position) << std::endl;
+		}
+
+		if (name == camName)
+		{
+			camera.position = math::translate(tmp.globalTransform, camera.position);
+			camera.forward = math::translaten(tmp.globalNormalTransform, camera.forward);
+			camera.up = math::translaten(tmp.globalNormalTransform, camera.up);
+			std::cout << "Camera dir: " << math::to_string(camera.forward) << std::endl;
 		}
 		
 		// Load children
 		thrust::host_vector<int> children(node->mNumChildren);
 		for(int i = 0; i < node->mNumChildren; i++)
 		{
-			children[i] = loadObject(node->mChildren[i], &obj, objs, camName, lightMap, hLights);
+			children[i] = loadObject(node->mChildren[i], &tmp, objs, camName, lightMap, hLights);
 		}
-		obj.children = vector<int>(children);
+		objs[i].children = vector<int>(children);
 		
-		return obj.index;
+		return i;
 	}
 
 	bool Scene::intersect(const Ray &r, HitInfo &info)
@@ -167,9 +190,94 @@ namespace acr
 		bool intersected = false;
 		for (int i = 0; i < objects.size(); i++)
 		{
-			intersected = objects[i].intersect(r, info,meshes);
+			intersected |= objects[i].intersect(r, info, meshes);
 		}
 		return intersected;
+	}
+
+	Color3 Scene::pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state)
+	{
+		math::vec3 dir = (l.position + 0.5f*math::randNorm(&state)) - pos;
+		float t = math::length(dir);
+
+		dir = normalize(dir);
+
+		float cosTheta = math::max(math::dot(dir, norm), 0.0f);
+		Color3 c = cosTheta / (l.attConstant + (l.attLinear + l.attQuadratic*t)*t) * l.diffuse;
+		if (math::length(c) < math::epsilon<float>()) return c;
+
+		Ray r;
+		r.o = pos;
+		r.d = dir;
+
+		HitInfo info;
+		info.t = t;
+		if (intersect(r, info) && info.t + math::epsilon<float>() < t)
+		{
+			return Color3(0,0,0);
+		}
+		return c;
+	}
+
+
+	Color3 Scene::spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm)
+	{
+		math::vec3 dir = l.position - pos;
+		float t = math::length(dir);
+
+		dir = normalize(dir);
+
+		float cosTheta = math::max(math::dot(dir, norm), 0.0f);
+		float cosLight = math::dot(-dir, normalize(l.direction));
+		float lightTheta = math::acos(cosLight);
+		float inner = l.outerConeAngle - 1.57079632679f;
+		float outer = l.innerConeAngle;
+		float falloff_distance = outer-inner;
+
+		if (math::abs(lightTheta) >= outer/2.0f)
+			return Color3(0, 0, 0);
+
+		Color3 c = cosTheta / (l.attConstant + (l.attLinear + l.attQuadratic*t)*t) * l.diffuse;
+		if (math::length(c) < math::epsilon<float>()) return c;
+
+		float val = (outer/2.0f - math::abs(lightTheta));
+		float falloff = val / (falloff_distance/2.0f);
+
+		if (math::abs(lightTheta) >= inner/2.0)
+			return falloff*c;
+
+		Ray r;
+		r.o = pos;
+		r.d = dir;
+
+		HitInfo info;
+		info.t = t;
+		if (intersect(r, info) && info.t + math::epsilon<float>() < t)
+		{
+			return Color3(0, 0, 0);
+		}
+		return c;
+	}
+
+	Color3 Scene::lightPoint(const math::vec3 &pos, const math::vec3 &norm, curandState &state)
+	{
+		Color3 light(0, 0, 0);
+		for (int i = 0; i < lights.size(); i++)
+		{
+			const Light &l = lights[i];
+
+			switch (l.type)
+			{
+				case Light::Type::DIRECTIONAL:
+				case Light::Type::SPOT:
+					light += spotLightAccum(l, pos, norm);
+					break;
+				case Light::Type::POINT:
+					light += pointLightAccum(l, pos, norm, state);
+					break;
+			}
+		}
+		return light;
 	}
 
 	Camera::Camera(const aiCamera *cam)
@@ -178,7 +286,7 @@ namespace acr
 		horizontalFOV = cam->mHorizontalFOV;
 		position = getVec3(cam->mPosition);
 		up = getVec3(cam->mUp);
-		forward = math::normalize(getVec3(cam->mLookAt) - position);
+		forward = getVec3(cam->mLookAt);
 	}
 
 	Light::Light(const aiLight *aiLight)
@@ -194,6 +302,20 @@ namespace acr
 		ambient = getColor3(aiLight->mColorAmbient);
 		diffuse = getColor3(aiLight->mColorDiffuse);
 		specular = getColor3(aiLight->mColorSpecular);
+
+		switch (aiLight->mType)
+		{
+			case aiLightSourceType::aiLightSource_DIRECTIONAL:
+				type = Type::DIRECTIONAL;
+				break;
+			case aiLightSourceType::aiLightSource_SPOT:
+				type = Type::SPOT;
+				break;
+			case aiLightSourceType::aiLightSource_POINT:
+			default:
+				type = Type::POINT;
+				break;
+		}
 	}
 
 	Object::Object(const Object &obj)
@@ -211,6 +333,7 @@ namespace acr
 			name[i] = obj.name[i];
 		}
 	}
+	
 	Object::Object(Object &obj)
 		: index(obj.index)
 		, parentIndex(obj.parentIndex)
@@ -235,7 +358,7 @@ namespace acr
 		getMathMatrix(node->mTransformation,localTransform);
 		globalTransform = parent ? parent->globalTransform * localTransform : localTransform;
 		globalInverseTransform = math::inverse(globalTransform);
-		globalNormalTransform = math::transpose(globalInverseTransform);
+		globalNormalTransform = math::transpose(math::inverse(math::mat3(globalTransform)));
 		globalInverseNormalTransform = math::inverse(globalNormalTransform);
 
 		meshes = vector<int>(thrust::host_vector<int>(node->mMeshes, node->mMeshes + node->mNumMeshes));
@@ -244,22 +367,33 @@ namespace acr
 	bool Object::intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshMap)
 	{
 		Ray lr;
-		lr.o = math::vec3(globalInverseTransform * math::vec4(r.o, 1.0));
-		lr.d = math::vec3(globalInverseNormalTransform * math::vec4(r.d, 1.0));
+		lr.o = math::translate(globalInverseTransform, r.o);
+		lr.d = math::translaten(globalInverseNormalTransform, r.d);
 
 		// mesh intersection
 		bool intersected = false;
+		
+		HitInfo tmpInfo;
+		tmpInfo.t = FLT_MAX;
+
 		for (int i = 0; i < meshes.size(); i++)
 		{
-			intersected = meshMap[meshes[i]].intersect(r, info);
+			intersected |= meshMap[meshes[i]].intersect(lr, tmpInfo);
 		}
 
-		// transform to world space
-		if(intersected)
+		if (intersected)
 		{
-			info.point.position = math::vec3(globalTransform * math::vec4(info.point.position, 1.0));
-			info.point.normal = math::vec3(globalNormalTransform * math::vec4(info.point.normal, 1.0));
+			tmpInfo.point.position = math::translate(globalTransform, tmpInfo.point.position);
+			tmpInfo.point.normal = math::translaten(globalNormalTransform, tmpInfo.point.normal);
+
+			float t = math::length(tmpInfo.point.position - r.o);
+			if (t < info.t)
+			{
+				info = tmpInfo;
+				info.t = t;
+			}
 		}
+
 		return intersected;
 	}
 }

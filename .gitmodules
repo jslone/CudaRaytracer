@@ -1,12 +1,9 @@
-[submodule "src/libs/tinyxml2"]
-	path = src/libs/tinyxml2
-	url = https://github.com:leethomason/tinyxml2.git
-[submodule "src/libs/tinyobjloader"]
-	path = src/libs/tinyobjloader
-	url = https://github.com:syoyo/tinyobjloader.git
 [submodule "src/libs/assimp"]
 	path = src/libs/assimp
 	url = https://github.com/jslone/assimp.git
 [submodule "src/libs/glew"]
 	path = src/libs/glew
 	url = https://github.com/nigels-com/glew.git
+[submodule "src/libs/FreeGLUT"]
+	path = src/libs/FreeGLUT
+	url = https://github.com/dcnieho/FreeGLUT.git
