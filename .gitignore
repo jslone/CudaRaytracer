@@ -13,6 +13,9 @@ Thumbs.db.meta
 # build
 /build/
 
+# scenes
+/scenes/
+
 # CUDA
 *.i
 *.ii
