@@ -28,10 +28,10 @@ namespace acr
 		vector<int> meshes;
 		math::mat4 globalTransform;
 		math::mat4 localTransform;
-		math::mat4 globalNormalTransform;
+		math::mat3 globalNormalTransform;
 
 		math::mat4 globalInverseTransform;
-		math::mat4 globalInverseNormalTransform;
+		math::mat3 globalInverseNormalTransform;
 		
 		__host__ __device__
 		bool intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshes);

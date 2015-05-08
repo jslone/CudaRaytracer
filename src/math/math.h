@@ -172,9 +172,9 @@ namespace acr
 			return vec3(hom) / hom.w;
 		}
 
-		GLM_FUNC_QUALIFIER vec3 translaten(const mat4 &m, const vec3 &v)
+		GLM_FUNC_QUALIFIER vec3 translaten(const mat3 &m, const vec3 &v)
 		{
-			return normalize(translate(m, v));
+			return normalize(m*v);
 		}
 	}
 }
