@@ -212,7 +212,7 @@ namespace acr
 		HitInfo info;
 		if (intersect(r, info) && info.t < t)
 		{
-			//return Color3(0, 0, 0);
+			return Color3(0,0,0);
 		}
 		return c;
 	}
@@ -299,7 +299,7 @@ namespace acr
 		getMathMatrix(node->mTransformation,localTransform);
 		globalTransform = parent ? parent->globalTransform * localTransform : localTransform;
 		globalInverseTransform = math::inverse(globalTransform);
-		globalNormalTransform = math::transpose(globalInverseTransform);
+		globalNormalTransform = math::transpose(math::inverse(math::mat3(globalTransform)));
 		globalInverseNormalTransform = math::inverse(globalNormalTransform);
 
 		meshes = vector<int>(thrust::host_vector<int>(node->mMeshes, node->mMeshes + node->mNumMeshes));

@@ -231,7 +231,7 @@ namespace acr
 
 		Ray r;
 		r.o = scene->camera.position;
-		r.d = get_pixel_dir(scene->camera, i, j);
+		r.d = get_pixel_dir(scene->camera, i, -j);
 
 		HitInfo info;
 		info.t = FLT_MAX;
