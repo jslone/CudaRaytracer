@@ -26,4 +26,4 @@ Here is a sneak peak of a few different scenes our real-time raytracer has rende
 
 * Finish up final visual features of raytracer.
 * Optimize data structures to organize mesh objects locationally to minimize the amount of computation needed to perform intersections.
-* Gather and analyze framesrate for different scenes and different optimizations.
+* Gather and analyze framerates for different scenes and different optimizations.
