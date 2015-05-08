@@ -65,10 +65,6 @@ namespace acr
 					info.t = t;
 					info.point.position = r.o + r.d*t;
 					info.point.normal = bCoords.x * v0.normal + bCoords.y * v1.normal + bCoords.z * v2.normal;
-					if (math::dot(info.point.normal, r.d) > 0)
-					{
-						info.point.normal = -info.point.normal;
-					}
 					info.point.color = bCoords.x * v0.color + bCoords.y * v1.color + bCoords.z * v2.color;
 					info.materialIndex = materialIndex;
 
