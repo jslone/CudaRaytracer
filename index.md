@@ -8,18 +8,18 @@ A real-time GPU raytracer created using CUDA and adaptive thread-block allocatio
 
 # Sneak Peek - Cornell Box Renders
 
-Here is a sneak peak of a few different scenes our real-time raytracer has rendered.  We went through the pain of connecting a 3D import asset library to our project to give us complete control over the scenes that we render, making it very easy for us to test and debug our project.  We're excited to implement data structures that significantly improve the ray intersection part of our program and then put our real-time raytracter to the test with even more complex scenes.
+Here is a sneak peak of a few different scenes our real-time raytracer has rendered.  We went through the pain of connecting a 3D import asset library to our project to give us complete control over the scenes that we render, making it very easy for us to test and debug our project.  We're excited to implement data structures that significantly improve the ray intersection part of our program and then put our real-time raytracer to the test with even more complex scenes.
 
-## Diffuse Scene
+#### Diffuse Scene
 ![Diffuse Render](images/diffuse.PNG "Diffuse Render")
 
-## Specular Scene
+#### Specular Scene
 ![Specular Render](images/specular.PNG "Specular Render")
 
-## Specular Scene with Spotlight
+#### Specular Scene with Spotlight
 ![Spotlight Render](images/spot.PNG "Spotlight Render")
 
-## Scene Converging
+#### Scene Converging
 ![Converging Render](images/converging.PNG "Converging Render")
 
 # Final Steps
