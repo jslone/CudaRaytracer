@@ -6,7 +6,9 @@ title: Project Preview
 # Overview
 A real-time GPU raytracer created using CUDA and adaptive thread-block allocation and assignment of rays.
 
-# Cornell Box Renders
+# Sneak Peek - Cornell Box Renders
+
+Here is a sneak peak of a few different scenes our real-time raytracer has rendered.  We went through the pain of connecting a 3D import asset library to our project to give us complete control over the scenes that we render, making it very easy for us to test and debug our project.  We're excited to implement data structures that significantly improve the ray intersection part of our program and then put our real-time raytracter to the test with even more complex scenes.
 
 ## Diffuse Scene
 ![Diffuse Render](images/diffuse.PNG "Diffuse Render")
@@ -23,5 +25,5 @@ A real-time GPU raytracer created using CUDA and adaptive thread-block allocatio
 # Final Steps
 
 * Finish up final visual features of raytracer.
-* Optimize Data Structures - Manage mesh objects in a locational data structure as to minimize the amount of computation needed to perform intersections.
-* Perform Analysis - Gather and analyze framesrate for different scenes and different optimizations.
+* Optimize data structures to organize mesh objects locationally to minimize the amount of computation needed to perform intersections.
+* Gather and analyze framesrate for different scenes and different optimizations.
