@@ -22,6 +22,6 @@ A real-time GPU raytracer created using CUDA and adaptive thread-block allocatio
 
 # Final Steps
 
-*Finish up final visual features of raytracer.
-*Optimize Data Structures - Manage mesh objects in a locational data structure as to minimize the amount of computation needed to perform intersections.
-*Perform Analysis - Gather and analyze framesrate for different scenes and different optimizations.
+* Finish up final visual features of raytracer.
+* Optimize Data Structures - Manage mesh objects in a locational data structure as to minimize the amount of computation needed to perform intersections.
+* Perform Analysis - Gather and analyze framesrate for different scenes and different optimizations.
