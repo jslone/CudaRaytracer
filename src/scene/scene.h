@@ -80,14 +80,14 @@ namespace acr
 		Scene(const Args &args);
 		~Scene();
 
-		__host__ __device__
+		__device__
 		bool intersect(const Ray& r, HitInfo &info);
 
-		__host__ __device__
-		Color3 lightPoint(const math::vec3 &pos, const math::vec3 &norm);
+		__device__
+		Color3 lightPoint(const math::vec3 &pos, const math::vec3 &norm, curandState &state);
 
-		__host__ __device__
-		Color3 pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm);
+		__device__
+		Color3 pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state);
 	private:
 		void loadScene(const aiScene* scene);
 		void loadLights(const aiScene* scene, thrust::host_vector<Light> &hLights, std::unordered_map<std::string,int> &lightMap);

@@ -1,9 +1,16 @@
 #ifndef _MATH_H_
 #define _MATH_H_
 
+#include <curand.h>
+#include <curand_kernel.h>
+
+#include <stdlib.h>
+
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
 #include "gtx/rotate_vector.hpp"
+#include "gtc/constants.hpp"
+#include "gtx/component_wise.hpp"
 
 #if __CUDA_ARCH__
 namespace glm
@@ -175,6 +182,22 @@ namespace acr
 		GLM_FUNC_QUALIFIER vec3 translaten(const mat3 &m, const vec3 &v)
 		{
 			return normalize(m*v);
+		}
+
+		__device__ inline vec3 randNorm(curandState *state)
+		{
+			float u = 2*curand_uniform(state) - 1;
+			float theta = 2 * pi<float>() * curand_uniform(state);
+
+			float somu = sqrt(1 - u*u);
+
+			return vec3(somu * fastercos(theta), somu * fastersin(theta), u);
+		}
+
+		__device__ inline vec3 randomHemi(const vec3 &norm, curandState *state)
+		{
+			vec3 unit = randNorm(state);
+			return dot(norm, unit) < 0 ? -unit : unit;
 		}
 	}
 }

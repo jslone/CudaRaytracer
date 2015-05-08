@@ -194,9 +194,9 @@ namespace acr
 		return intersected;
 	}
 
-	Color3 Scene::pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm)
+	Color3 Scene::pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state)
 	{
-		math::vec3 dir = l.position - pos;
+		math::vec3 dir = (l.position + 0.5f*math::randNorm(&state)) - pos;
 		float t = math::length(dir);
 
 		dir = normalize(dir);
@@ -218,7 +218,7 @@ namespace acr
 		return c;
 	}
 
-	Color3 Scene::lightPoint(const math::vec3 &pos, const math::vec3 &norm)
+	Color3 Scene::lightPoint(const math::vec3 &pos, const math::vec3 &norm, curandState &state)
 	{
 		Color3 light(0, 0, 0);
 		for (int i = 0; i < lights.size(); i++)
@@ -230,7 +230,7 @@ namespace acr
 				case Light::Type::DIRECTIONAL:
 				case Light::Type::SPOT:
 				case Light::Type::POINT:
-					light += pointLightAccum(l, pos, norm);
+					light += pointLightAccum(l, pos, norm, state);
 					break;
 			}
 		}

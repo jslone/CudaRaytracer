@@ -7,9 +7,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#include <curand.h>
-#include <curand_kernel.h>
-
 #include "math/math.h"
 #include "scene/scene.h"
 
@@ -46,8 +43,7 @@ namespace acr
 		GLuint drawBuffer;
 		GLuint textureId;
 
-		curandState *cuRandStates;
-
+		uint64_t framesNoMove;
 	};
 
 } // namespace acr

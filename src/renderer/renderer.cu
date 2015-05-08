@@ -23,6 +23,7 @@ namespace acr
 	Renderer::Renderer(const Renderer::Args &args)
 		: title(args.title)
 		, dim(args.dim)
+		, framesNoMove(0)
 	{
 		renderer = this;
 
@@ -113,6 +114,10 @@ namespace acr
 
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		
+		float fLargest;
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
 	}
 
 	Renderer::~Renderer()
@@ -139,6 +144,8 @@ namespace acr
 		scene->camera.position += delta;
 
 		cudaMemcpyToSymbol(devParams, &param, sizeof(DevParams));
+
+		framesNoMove = 0;
 	}
 
 	void Renderer::loadScene(const Scene &scene)
@@ -203,8 +210,69 @@ namespace acr
 		return camera.position + dist*(float(nj)*cU + AR*float(ni)*cR);
 	}
 
+	template<int N>
+	__device__ inline
+	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state);
+
+	template<int N>
+	__device__ inline
+	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state)
+	{
+		HitInfo info;
+		info.t = FLT_MAX;
+		Color4 contribution = Color4(0, 0, 0, 1);
+		if (scene->intersect(r, info))
+		{
+			Material &mat = scene->materials[info.materialIndex];
+			
+			// direct illum
+			Color3 c = mat.ambient
+					+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal, state);
+
+			// indirect illum
+			Color3 nSource;
+			Ray nr;
+			nr.o = info.point.position;
+
+			Color3 cd = source * mat.diffuse;
+			Color3 cs = source * mat.specular;
+
+			float Pd = math::compMax(cd) / math::compMax(source);
+			float Ps = math::compMax(cs) / math::compMax(source);
+
+			float P = curand_uniform(&state);
+			// Diffuse bounce
+			if (P < Pd)
+			{
+				nSource = cd * (1 / Pd);
+				nr.d = math::randomHemi(info.point.normal, &state);
+			}
+			// Specular bounce
+			else if (P < Pd + Ps)
+			{
+				nSource = cs * (1 / Ps);
+				nr.d = math::reflect(r.d, info.point.normal);
+			}
+			// Absorbtion
+			else
+			{
+				return Color4(c, 1);
+			}
+
+			contribution = Color4(c, 1) + rayColor<N - 1>(nr, nSource, scene, state);
+		}
+		return contribution;
+	}
+
+	template<>
+	__device__ inline
+	Color4 rayColor<0>(const Ray &r, const Color3 source, Scene *scene, curandState state)
+	{
+		return Color4(0, 0, 0, 1);
+	}
+
 	__global__
-	void scatterTrace(Color4 *screen, unsigned long seed)
+	void scatterTrace(Color4 *screen, unsigned long seed, uint64_t frames)
 	{
 		const int width = devParams->width;
 		const int height = devParams->height;
@@ -219,7 +287,7 @@ namespace acr
 		}
 		
 		curandState state;
-		curand_init(seed, 0, 0, &state);
+		curand_init(index + seed, 0, 0, &state);
 
 		Scene *scene = (Scene*)devParams;
 
@@ -233,25 +301,17 @@ namespace acr
 		r.o = scene->camera.position;
 		r.d = get_pixel_dir(scene->camera, i, -j);
 
-		HitInfo info;
-		info.t = FLT_MAX;
-		Color4 contribution = Color4(0, 0, 0, 1);
-		if(scene->intersect(r,info))
+		Color4 contribution = rayColor<2>(r, Color3(1,1,1), scene, state);
+		
+		if (frames > 0)
 		{
-			Material &mat = scene->materials[info.materialIndex];
-			Color3 c = mat.ambient
-				+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal);
-			contribution = Color4(c, 1);
-			
-			if (x == width / 2 && y == height / 2)
-			{
-				//printf("Pos: (%f,%f,%f), Norm: (%f,%f,%f)\n", info.point.position.x, info.point.position.y, info.point.position.z, info.point.normal.x, info.point.normal.y, info.point.normal.z);
-			}
-			//contribution = Color4(info.point.position / Color3(-6,6,6), 1); // render position
-			//contribution = Color4((info.point.normal + Color3(1,1,1)) / 2.0f, 1); // render normals
+			screen[index] *= (float(frames) / float(frames + 1));
+			screen[index] += (contribution / float(frames + 1));
 		}
-
-		screen[index] = contribution;
+		else
+		{
+			screen[index] = contribution;
+		}
 	}
 
 	void Renderer::render()
@@ -268,8 +328,10 @@ namespace acr
 		dim3 block(16,16);
 		dim3 grid((dim.x + block.x - 1) / block.x, (dim.y + block.y - 1) / block.y);
 
-		scatterTrace<<<grid,block>>>(screen,glutGet(GLUT_ELAPSED_TIME));
+		//std::cout << "frame count: " << framesNoMove << std::endl;
+		scatterTrace<<<grid,block>>>(screen,rand(),framesNoMove);
 		cudaDeviceSynchronize();
+		framesNoMove++;
 
 		// unbind draw buffer so openGL can use
 		cudaGLUnmapBufferObject(drawBuffer);
