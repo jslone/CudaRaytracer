@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Project Preview
+title: Sneak Peak
 ---
 
 # Overview
@@ -21,6 +21,9 @@ Here is a sneak peak of a few different scenes our real-time raytracer has rende
 
 #### Scene Converging
 ![Converging Render](images/converging.PNG "Converging Render")
+
+#### Transparent Scene
+![Transparent Render](images/transparent2.PNG "Transparent Render")
 
 # Final Steps
 
