@@ -13,16 +13,16 @@ namespace acr
   		switch ( key )
 		{
 			case 'w':
-				app->renderer.moveCamera(math::vec3(0, 0, 1)*movSpeed, math::vec2(0,0));
+				app->renderer.moveCamera(math::vec2(0, 1)*movSpeed, math::vec2(0,0));
 				break;
 			case 'a':
-				app->renderer.moveCamera(math::vec3(-1, 0, 0)*movSpeed, math::vec2(0, 0));
+				app->renderer.moveCamera(math::vec2(-1, 0)*movSpeed, math::vec2(0, 0));
 				break;
 			case 's':
-				app->renderer.moveCamera(math::vec3(0, 0, -1)*movSpeed, math::vec2(0, 0));
+				app->renderer.moveCamera(math::vec2(0, -1)*movSpeed, math::vec2(0, 0));
 				break;
 			case 'd':
-				app->renderer.moveCamera(math::vec3(1, 0, 0)*movSpeed, math::vec2(0, 0));
+				app->renderer.moveCamera(math::vec2(1, 0)*movSpeed, math::vec2(0, 0));
 				break;
 			case 27: // Escape key
 				exit (0);
@@ -52,7 +52,7 @@ namespace acr
 		{
 			math::vec2 delta = (nextPos - mousePos) * rotSpeed;
 			delta.x *= -1;
-			app->renderer.moveCamera(math::vec3(0, 0, 0), delta);
+			app->renderer.moveCamera(math::vec2(0, 0), delta);
 		}
 		mousePos = nextPos;
 	}

@@ -70,7 +70,7 @@ namespace acr
 		template<typename genType>
 		GLM_FUNC_QUALIFIER genType epsilon()
 		{
-			return genType(0.001f);
+			//return genType(0.001f);
 			genType v = genType(1.0f);
 			(*((int*)&v))++;
 			return v - genType(1.0f);

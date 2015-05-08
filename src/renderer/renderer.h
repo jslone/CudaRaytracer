@@ -35,7 +35,7 @@ namespace acr
 		void loadScene(const Scene &scene);
 
 		void render();
-		void moveCamera(const math::vec3 &pos, const math::vec2 &dir);
+		void moveCamera(const math::vec2 &pos, const math::vec2 &dir);
 	private:
 
 		int winId;

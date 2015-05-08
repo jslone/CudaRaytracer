@@ -120,7 +120,7 @@ namespace acr
 		glutDestroyWindow(winId);
 	}
 
-	void Renderer::moveCamera(const math::vec3 &pos, const math::vec2 &dir)
+	void Renderer::moveCamera(const math::vec2 &pos, const math::vec2 &dir)
 	{
 		DevParams param;
 		cudaMemcpyFromSymbol(&param, devParams, sizeof(DevParams));
@@ -134,7 +134,9 @@ namespace acr
 		scene->camera.forward = math::rotate(scene->camera.forward, dir.y, right);
 		scene->camera.up = math::rotate(scene->camera.up, dir.y, right);
 
-		scene->camera.position += pos;
+		math::vec3 delta = scene->camera.forward * pos.y + right * pos.x;
+
+		scene->camera.position += delta;
 
 		cudaMemcpyToSymbol(devParams, &param, sizeof(DevParams));
 	}
