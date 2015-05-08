@@ -152,8 +152,8 @@ namespace acr
 
 		math::vec3 pos = math::translate(tmp.globalTransform, math::vec3(0, 0, 0));
 		std::cout << name << ": " << math::to_string(pos) << std::endl;
-		std::cout << name << " transform: " << math::to_string(tmp.globalTransform) << std::endl;
-		std::cout << name << " normal trans: " << math::to_string(tmp.globalNormalTransform) << std::endl;
+		//std::cout << name << " transform: " << math::to_string(tmp.globalTransform) << std::endl;
+		//std::cout << name << " normal trans: " << math::to_string(tmp.globalNormalTransform) << std::endl;
 
 		auto light_got = lightMap.find(name);
 
@@ -162,6 +162,7 @@ namespace acr
 			int lIndex = light_got->second;
 			Light &l = hLights[lIndex];
 			l.position = math::translate(objs[i].globalTransform, l.position);
+			std::cout << light_got->first << " pos: " << math::to_string(l.position) << std::endl;
 		}
 
 		if (name == camName)
@@ -202,15 +203,15 @@ namespace acr
 
 		float cosTheta = math::max(math::dot(dir, norm), 0.0f);
 		Color3 c = cosTheta / (l.attConstant + (l.attLinear + l.attQuadratic*t)*t) * l.diffuse;
-		//printf("%f, (%f,%f,%f), (%f,%f,%f), (%f,%f,%f)\n", cosTheta, c.r, c.g, c.b, norm.x, norm.y, norm.z, dir.x, dir.y, dir.z);
-		//if (math::length(c) < 0.01f) return c;
+		if (math::length(c) < math::epsilon<float>()) return c;
 
 		Ray r;
 		r.o = pos;
 		r.d = dir;
 
 		HitInfo info;
-		if (intersect(r, info) && info.t < t)
+		info.t = t;
+		if (intersect(r, info) && info.t + math::epsilon<float>() < t)
 		{
 			return Color3(0,0,0);
 		}
@@ -223,13 +224,13 @@ namespace acr
 		for (int i = 0; i < lights.size(); i++)
 		{
 			const Light &l = lights[i];
-			light += pointLightAccum(l, pos, norm);
+			
 			switch (l.type)
 			{
 				case Light::Type::DIRECTIONAL:
 				case Light::Type::SPOT:
 				case Light::Type::POINT:
-					
+					light += pointLightAccum(l, pos, norm);
 					break;
 			}
 		}
@@ -258,6 +259,20 @@ namespace acr
 		ambient = getColor3(aiLight->mColorAmbient);
 		diffuse = getColor3(aiLight->mColorDiffuse);
 		specular = getColor3(aiLight->mColorSpecular);
+
+		switch (aiLight->mType)
+		{
+			case aiLightSourceType::aiLightSource_DIRECTIONAL:
+				type = Type::DIRECTIONAL;
+				break;
+			case aiLightSourceType::aiLightSource_SPOT:
+				type = Type::SPOT;
+				break;
+			case aiLightSourceType::aiLightSource_POINT:
+			default:
+				type = Type::POINT;
+				break;
+		}
 	}
 
 	Object::Object(const Object &obj)
@@ -275,6 +290,7 @@ namespace acr
 			name[i] = obj.name[i];
 		}
 	}
+	
 	Object::Object(Object &obj)
 		: index(obj.index)
 		, parentIndex(obj.parentIndex)

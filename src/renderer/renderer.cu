@@ -242,6 +242,13 @@ namespace acr
 			Color3 c = mat.ambient
 				+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal);
 			contribution = Color4(c, 1);
+			
+			if (x == width / 2 && y == height / 2)
+			{
+				//printf("Pos: (%f,%f,%f), Norm: (%f,%f,%f)\n", info.point.position.x, info.point.position.y, info.point.position.z, info.point.normal.x, info.point.normal.y, info.point.normal.z);
+			}
+			//contribution = Color4(info.point.position / Color3(-6,6,6), 1); // render position
+			//contribution = Color4((info.point.normal + Color3(1,1,1)) / 2.0f, 1); // render normals
 		}
 
 		screen[index] = contribution;

@@ -18,7 +18,7 @@ namespace acr
 				vs[i].normal[j] = aiMesh->mNormals[i][j];
 				vs[i].color[j] = aiMesh->mColors[0] ? aiMesh->mColors[0][i][j] : 1.0f;
 			}
-			std::cout << math::to_string(vs[i].position) << ",";
+			std::cout << "Pos: " << math::to_string(vs[i].position) << ", Norm: " << math::to_string(vs[i].normal) << std::endl;
 		}
 		std::cout << "\b]" << std::endl;
 		vertices = vector<Vertex>(vs);
