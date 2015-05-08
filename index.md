@@ -6,7 +6,7 @@ title: Project Preview
 # Overview
 A real-time GPU raytracer created using CUDA and adaptive thread-block allocation and assignment of rays.
 
-# Progress Update - Cornell Box Renders
+# Cornell Box Renders
 
 ## Diffuse Scene
 ![Diffuse Render](images/diffuse.PNG "Diffuse Render")
