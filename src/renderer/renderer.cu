@@ -235,7 +235,7 @@ namespace acr
 
 		HitInfo info;
 		info.t = FLT_MAX;
-		Color4 contribution = Color4(0, 0, 0, 1);
+		Color4 contribution = Color4(0.3f, 0.3f, 0.3f, 1);
 		if(scene->intersect(r,info))
 		{
 			Material &mat = scene->materials[info.materialIndex];

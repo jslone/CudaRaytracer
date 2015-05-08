@@ -162,6 +162,7 @@ namespace acr
 			int lIndex = light_got->second;
 			Light &l = hLights[lIndex];
 			l.position = math::translate(objs[i].globalTransform, l.position);
+			l.direction = math::translaten(tmp.globalNormalTransform, l.direction);
 			std::cout << light_got->first << " pos: " << math::to_string(l.position) << std::endl;
 		}
 
@@ -218,17 +219,58 @@ namespace acr
 		return c;
 	}
 
+	Color3 Scene::spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm)
+	{
+		math::vec3 dir = l.position - pos;
+		float t = math::length(dir);
+
+		dir = normalize(dir);
+
+		float cosTheta = math::max(math::dot(dir, norm), 0.0f);
+		float cosLight = math::dot(-dir, normalize(l.direction));
+		float lightTheta = math::acos(cosLight);
+		float inner = l.outerConeAngle - 1.57079632679f;
+		float outer = l.innerConeAngle;
+		float falloff_distance = outer-inner;
+
+		if (math::abs(lightTheta) >= outer/2.0f)
+			return Color3(0, 0, 0);
+
+		Color3 c = cosTheta / (l.attConstant + (l.attLinear + l.attQuadratic*t)*t) * l.diffuse;
+		if (math::length(c) < math::epsilon<float>()) return c;
+
+		float val = (outer/2.0f - math::abs(lightTheta));
+		float falloff = val / (falloff_distance/2.0f);
+
+		if (math::abs(lightTheta) >= inner/2.0)
+			return falloff*c;
+
+		Ray r;
+		r.o = pos;
+		r.d = dir;
+
+		HitInfo info;
+		info.t = t;
+		if (intersect(r, info) && info.t + math::epsilon<float>() < t)
+		{
+			return Color3(0, 0, 0);
+		}
+		return c;
+	}
+
 	Color3 Scene::lightPoint(const math::vec3 &pos, const math::vec3 &norm)
 	{
 		Color3 light(0, 0, 0);
 		for (int i = 0; i < lights.size(); i++)
 		{
 			const Light &l = lights[i];
-			
+
 			switch (l.type)
 			{
 				case Light::Type::DIRECTIONAL:
 				case Light::Type::SPOT:
+					light += spotLightAccum(l, pos, norm);
+					break;
 				case Light::Type::POINT:
 					light += pointLightAccum(l, pos, norm);
 					break;

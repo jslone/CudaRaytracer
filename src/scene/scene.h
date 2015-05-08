@@ -88,6 +88,10 @@ namespace acr
 
 		__host__ __device__
 		Color3 pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm);
+
+		__host__ __device__
+		Color3 spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm);
+
 	private:
 		void loadScene(const aiScene* scene);
 		void loadLights(const aiScene* scene, thrust::host_vector<Light> &hLights, std::unordered_map<std::string,int> &lightMap);
