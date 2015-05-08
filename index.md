@@ -20,22 +20,8 @@ A real-time GPU raytracer created using CUDA and adaptive thread-block allocatio
 ## Scene Converging
 ![Converging Render](images/converging.PNG "Converging Render")
 
-~~~
-git clone git@github.com:jslone/CudaRaytracer.git
-cd CudaRayTracer
-mkdir build && cd build
-cmake ../src
-make
-~~~
+# Final Steps
 
-# Running
-
-~~~
-./build/bin/application
-~~~
-
-# Dependencies
-
-### cmake
-
-### CUDA Toolkit
+*Finish up final visual features of raytracer.
+*Optimize Data Structures - Manage mesh objects in a locational data structure as to minimize the amount of computation needed to perform intersections.
+*Perform Analysis - Gather and analyze framesrate for different scenes and different optimizations.
