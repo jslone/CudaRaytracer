@@ -58,14 +58,12 @@ namespace acr
 
 			if (math::myIntersectRayTriangle(r.o, r.d, a, b, c, bCoords, t))
 			{
-				math::vec3 position = bCoords.x*a + bCoords.y*(b-a) + bCoords.z*(c-a);
-
 				if (t < info.t)
 				{
 					intersected = true;
 
 					info.t = t;
-					info.point.position = position;
+					info.point.position = r.o + r.d*t;
 					info.point.normal = bCoords.x * v0.normal + bCoords.y * v1.normal + bCoords.z * v2.normal;
 					info.point.color = bCoords.x * v0.color + bCoords.y * v1.color + bCoords.z * v2.color;
 					info.materialIndex = materialIndex;

@@ -38,7 +38,6 @@ namespace acr
 	{
 		mousePos.x = x;
 		mousePos.y = y;
-		std::cout << (state == GLUT_DOWN ? "yar" : "nar") << std::endl;
 		shouldRot = state == GLUT_DOWN;
 	}
 	
