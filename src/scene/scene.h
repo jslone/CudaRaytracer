@@ -89,7 +89,7 @@ namespace acr
 		__device__
 		Color3 pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state);
 
-		__host__ __device__
+		__device__
 		Color3 spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm);
 
 	private:

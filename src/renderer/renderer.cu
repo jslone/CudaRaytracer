@@ -234,31 +234,62 @@ namespace acr
 			Ray nr;
 			nr.o = info.point.position;
 
-			Color3 cd = source * mat.diffuse;
-			Color3 cs = source * mat.specular;
-
-			float Pd = math::compMax(cd) / math::compMax(source);
-			float Ps = math::compMax(cs) / math::compMax(source);
-
-			float P = curand_uniform(&state);
-			// Diffuse bounce
-			if (P < Pd)
+			// Opaque
+			if (mat.refractiveIndex == 0)
 			{
-				nSource = cd * (1 / Pd);
-				nr.d = math::randomHemi(info.point.normal, &state);
+
+				Color3 cd = source * mat.diffuse;
+				Color3 cs = source * mat.specular;
+
+				float Pd = math::compMax(cd) / math::compMax(source);
+				float Ps = math::compMax(cs) / math::compMax(source);
+
+				float P = curand_uniform(&state);
+				// Diffuse bounce
+				if (P < Pd)
+				{
+					nSource = cd * (1 / Pd);
+					nr.d = math::randomHemi(info.point.normal, &state);
+				}
+				// Specular bounce
+				else if (P < Pd + Ps)
+				{
+					nSource = cs * (1 / Ps);
+					nr.d = math::reflect(r.d, info.point.normal);
+				}
+				// Absorbtion
+				else
+				{
+					return Color4(c, 1);
+				}
 			}
-			// Specular bounce
-			else if (P < Pd + Ps)
-			{
-				nSource = cs * (1 / Ps);
-				nr.d = math::reflect(r.d, info.point.normal);
-			}
-			// Absorbtion
+			// Translucent
 			else
 			{
-				return Color4(c, 1);
-			}
+				float n1, n2;
+				math::vec3 norm = info.point.normal;
+				if (dot(r.d, norm) < 0)
+				{
+					n1 = mat.refractiveIndex;
+					n2 = 1;
+				}
+				else
+				{
+					n1 = 1;
+					n2 = mat.refractiveIndex;
+					norm *= -1;
+				}
 
+				float R = math::rSchlick2(r.d, norm, n1, n2);
+				if (curand_uniform(&state) >= R)
+				{
+					nr.d = math::refract(r.d, norm, n1 / n2);
+				}
+				else
+				{
+					nr.d = math::reflect(r.d, norm);
+				}
+			}
 			contribution = Color4(c, 1) + rayColor<N - 1>(nr, nSource, scene, state);
 		}
 		return contribution;
@@ -301,7 +332,7 @@ namespace acr
 		r.o = scene->camera.position;
 		r.d = get_pixel_dir(scene->camera, i, -j);
 
-		Color4 contribution = rayColor<2>(r, Color3(1,1,1), scene, state);
+		Color4 contribution = rayColor<5>(r, Color3(1,1,1), scene, state);
 		
 		if (frames > 0)
 		{

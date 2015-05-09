@@ -243,8 +243,8 @@ namespace acr
 		float val = (outer/2.0f - math::abs(lightTheta));
 		float falloff = val / (falloff_distance/2.0f);
 
-		if (math::abs(lightTheta) >= inner/2.0)
-			return falloff*c;
+		if (math::abs(lightTheta) >= inner / 2.0)
+			c *= falloff;
 
 		Ray r;
 		r.o = pos;

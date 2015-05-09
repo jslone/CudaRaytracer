@@ -199,6 +199,16 @@ namespace acr
 			vec3 unit = randNorm(state);
 			return dot(norm, unit) < 0 ? -unit : unit;
 		}
+
+		__device__ inline float rSchlick2(const vec3 &dir, const vec3 &norm, float n1, float n2)
+		{
+			float r0 = (n1 - n2) / (n1 + n2);
+			r0 *= r0;
+
+			float cosI = -dot(norm, dir);
+			float x = 1 - cosI;
+			return r0 + (1 - r0) * x * x * x * x * x;
+		}
 	}
 }
 
