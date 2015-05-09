@@ -11,18 +11,20 @@
 
 namespace acr
 {
+	class Scene;
 
 	class Object
 	{
 	public:
 		Object() = default;
-		Object(const aiNode *node, int index, Object *parent);
+		Object(const aiNode *node, int index, Object *parent, thrust::host_vector<Mesh> &hMeshes);
 		Object(const Object &obj);
 		Object(Object &obj);
 
 		char name[64];
 		int index;
 		int parentIndex;
+		math::vec3 globalCentroid;
 		
 		vector<int> children;
 		vector<int> meshes;
@@ -97,10 +99,10 @@ namespace acr
 		void loadLights(const aiScene* scene, thrust::host_vector<Light> &hLights, std::unordered_map<std::string,int> &lightMap);
 		void loadMaterials(const aiScene* scene);
 		void loadCamera(const aiScene *scene, std::string &camName);
-		void loadMeshes(const aiScene* scene);
-		void loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights);
+		void loadMeshes(const aiScene* scene, thrust::host_vector<Mesh> &hMeshes);
+		void loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes);
 
-		int loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &name, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights);
+		int loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &name, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes);
 	public:
 		vector<Object>		objects;
 		vector<Material>	materials;

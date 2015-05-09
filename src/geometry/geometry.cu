@@ -10,6 +10,10 @@ namespace acr
 	{
 		thrust::host_vector<Vertex> vs(aiMesh->mNumVertices);
 		std::cout << "Verts[";
+
+		//To get centroid
+		math::vec3 sumVertices(0, 0, 0);
+
 		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
 		{
 			for (uint32_t j = 0; j < 3; j++)
@@ -18,8 +22,14 @@ namespace acr
 				vs[i].normal[j] = aiMesh->mNormals[i][j];
 				vs[i].color[j] = aiMesh->mColors[0] ? aiMesh->mColors[0][i][j] : 1.0f;
 			}
+			sumVertices += vs[i].position;
+
 			std::cout << "Pos: " << math::to_string(vs[i].position) << ", Norm: " << math::to_string(vs[i].normal) << std::endl;
 		}
+
+		//Average to get centroid
+		localCentroid = sumVertices / (float)aiMesh->mNumVertices;
+
 		std::cout << "\b]" << std::endl;
 		vertices = vector<Vertex>(vs);
 
