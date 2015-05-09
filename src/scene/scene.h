@@ -2,7 +2,7 @@
 #define _SCENE_H_
 
 #include "assimp/scene.h"
-#include "geometry/geometry.h"
+#include "geometry/mesh.h"
 #include "math/math.h"
 #include "camera.h"
 

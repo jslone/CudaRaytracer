@@ -5,6 +5,7 @@
 #include <curand_kernel.h>
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
