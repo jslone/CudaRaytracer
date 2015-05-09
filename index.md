@@ -6,6 +6,10 @@ title: Sneak Peak
 # Overview
 A real-time GPU raytracer created using CUDA and adaptive thread-block allocation and assignment of rays.
 
+### Get excited for:
+* Bounding interval hierarchies to ammortize the cost of intersections from linear to logarithmic time
+* Adaptive thread-block assignment of rays
+
 # Sneak Peek - Cornell Box Renders
 
 Here is a sneak peak of a few different scenes our real-time raytracer has rendered.  We went through the pain of connecting a 3D import asset library to our project to give us complete control over the scenes that we render, making it very easy for us to test and debug our project.  We're excited to implement data structures that significantly improve the ray intersection part of our program and then put our real-time raytracer to the test with even more complex scenes.
