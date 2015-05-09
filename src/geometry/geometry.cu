@@ -13,6 +13,8 @@ namespace acr
 
 		//To get centroid
 		math::vec3 sumVertices(0, 0, 0);
+		math::vec3 minBound(FLT_MAX, FLT_MAX, FLT_MAX);
+		math::vec3 maxBound(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 		for (uint32_t i = 0; i < aiMesh->mNumVertices; i++)
 		{
@@ -23,9 +25,14 @@ namespace acr
 				vs[i].color[j] = aiMesh->mColors[0] ? aiMesh->mColors[0][i][j] : 1.0f;
 			}
 			sumVertices += vs[i].position;
+			minBound = math::min(minBound, vs[i].position);
+			maxBound = math::max(maxBound, vs[i].position);
 
 			std::cout << "Pos: " << math::to_string(vs[i].position) << ", Norm: " << math::to_string(vs[i].normal) << std::endl;
 		}
+
+		boundingBox.min = minBound;
+		boundingBox.max = maxBound;
 
 		//Average to get centroid
 		localCentroid = sumVertices / (float)aiMesh->mNumVertices;

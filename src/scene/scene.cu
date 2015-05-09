@@ -2,6 +2,7 @@
 #include "assimp/postprocess.h"
 #include "scene.h"
 #include "utils/vector.h"
+#include "utils/bih.h"
 #include <cstring>
 
 //#define LOAD_VERBOSE
@@ -354,6 +355,33 @@ namespace acr
 		}
 	}
 
+	BoundingBox Object::transformBoundingBox(BoundingBox bb)
+	{	
+		BoundingBox bounds;
+		bounds.max = math::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		bounds.min = math::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+
+		//Read bb struct as float array
+		float* coords = (float*)&bb;
+
+		//Iterate through vertices
+		for (int i = 0; i < 8; i++){
+			int xi = 3 * (i >> 2);				//Get 3rd bit, multiply by stride
+			int yi = 3 * ((i >> 1) & 1) + 1;	//Get 2nd bit, multiply by stride, and add offset
+			int zi = 3 * (i & 1) + 2;			//Get 1st bit, multiply by stride, and add offset
+
+			//Get local and global vertices
+			math::vec3 localVertex = math::vec3(coords[xi], coords[yi], coords[zi]);
+			math::vec3 globalVertex = math::translate(globalTransform, localVertex);
+
+			//Compare to current min/max
+			bounds.min = math::min(globalVertex, bounds.min);
+			bounds.max = math::max(globalVertex, bounds.max);
+		}
+
+		return bounds;
+	}
+
 	Object::Object(const aiNode *node, int index, Object *parent, thrust::host_vector<Mesh> &hMeshes)
 		: index(index)
 		, parentIndex(parent ? parent->index : -1)
@@ -366,14 +394,34 @@ namespace acr
 		globalInverseNormalTransform = math::inverse(globalNormalTransform);
 
 		thrust::host_vector<int> objMeshes = thrust::host_vector<int>(node->mMeshes, node->mMeshes + node->mNumMeshes);
+		globalCentroid = math::vec3(0, 0, 0);
+		boundingBox.min = math::vec3(0, 0, 0);
+		boundingBox.max = math::vec3(0, 0, 0);
 
-		// Get global centroid
+		// Get global centroid and AABB
 		if (objMeshes.size() > 0){
 
+			math::vec3 minBound(FLT_MAX, FLT_MAX, FLT_MAX);
+			math::vec3 maxBound(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 			math::vec3 sumCentroids(0, 0, 0);
 			for (int i = 0; i < objMeshes.size(); i++){
 				sumCentroids += hMeshes[objMeshes[i]].localCentroid;
+
+				minBound = math::min(minBound, hMeshes[objMeshes[i]].boundingBox.min);
+				maxBound = math::max(maxBound, hMeshes[objMeshes[i]].boundingBox.max);
 			}
+
+			BoundingBox localBoundingBox;
+			localBoundingBox.min = minBound;
+			localBoundingBox.max = maxBound;
+
+			//Global bounding box transform
+			boundingBox = transformBoundingBox(localBoundingBox);
+
+			/*printf("\n----------> BoundingBox[%s]\n", name);
+			printf("min(%f, %f, %f)\n", boundingBox.min.x, boundingBox.min.y, boundingBox.min.z);
+			printf("max(%f, %f, %f)\n", boundingBox.max.x, boundingBox.max.y, boundingBox.max.z);
+			printf("\n");*/
 
 			math::vec3 avgCentroid = sumCentroids / float(objMeshes.size());
 			globalCentroid = math::translate(globalTransform, avgCentroid);

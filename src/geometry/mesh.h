@@ -12,18 +12,19 @@ namespace acr
 	{
 	public:
 		math::vec3 localCentroid;
+		BoundingBox boundingBox;
 
 		__host__ __device__
-			Mesh() = default;
+		Mesh() = default;
 
 		__host__
-			Mesh(const aiMesh *aiMesh);
+		Mesh(const aiMesh *aiMesh);
 
 		__host__ __device__
-			~Mesh();
+		~Mesh();
 
 		__host__ __device__
-			bool intersect(const Ray &r, HitInfo &info);
+		bool intersect(const Ray &r, HitInfo &info);
 	private:
 		vector<Vertex>  vertices;
 		vector<Face>    faces;

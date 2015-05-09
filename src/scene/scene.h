@@ -25,6 +25,7 @@ namespace acr
 		int index;
 		int parentIndex;
 		math::vec3 globalCentroid;
+		BoundingBox boundingBox;
 		
 		vector<int> children;
 		vector<int> meshes;
@@ -34,6 +35,9 @@ namespace acr
 
 		math::mat4 globalInverseTransform;
 		math::mat3 globalInverseNormalTransform;
+		
+		__host__
+		BoundingBox transformBoundingBox(BoundingBox aabb);
 		
 		__host__ __device__
 		bool intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshes);
