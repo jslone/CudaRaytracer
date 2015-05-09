@@ -35,6 +35,11 @@ namespace acr
 		uint32_t materialIndex;
 	};
 
+	struct BoundingBox
+	{
+		math::vec3 min, max;
+	};
+
 	class Shape
 	{
 	public:
