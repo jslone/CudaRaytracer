@@ -42,13 +42,7 @@ namespace acr
 		}
 
 		// Use the scene
-		//DoTheSceneProcessing( scene);
 		loadScene(scene);
-
-		//Flush scene
-		//objects.flushToDevice();
-		//materials.flushToDevice();
-		//meshes.flushToDevice();
 	}
 
 	Scene::~Scene()
