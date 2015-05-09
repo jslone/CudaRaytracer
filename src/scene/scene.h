@@ -24,7 +24,7 @@ namespace acr
 		char name[64];
 		int index;
 		int parentIndex;
-		math::vec3 globalCentroid;
+		math::vec3 centroid;
 		BoundingBox boundingBox;
 		
 		vector<int> children;

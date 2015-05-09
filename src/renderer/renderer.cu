@@ -385,8 +385,6 @@ namespace acr
 			std::cerr << "glTexImage2D: " << gluErrorString(glErr) << std::endl;
 		}
 
-		
-
 		// draw fullscreen quad
 		glBegin(GL_QUADS);
 			glTexCoord2f( 0, 1.0f);

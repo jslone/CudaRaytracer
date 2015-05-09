@@ -11,7 +11,7 @@ namespace acr
 	class Mesh
 	{
 	public:
-		math::vec3 localCentroid;
+		math::vec3 centroid;
 		BoundingBox boundingBox;
 
 		__host__ __device__
