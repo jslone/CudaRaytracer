@@ -25,7 +25,7 @@ Here is a sneak peak of a few different scenes our real-time raytracer has rende
 #### Transparent Scene
 ![Transparent Render](images/transparent2.PNG "Transparent Render")
 
-#### Video Preview (Real-time 1.0x speedup)
+#### Video Preview (Real-time)
 <video width="100%" style="padding:5px;" controls>
   <source src="videos/sneak.mp4" type="video/mp4">
 Your browser does not support the video tag.
