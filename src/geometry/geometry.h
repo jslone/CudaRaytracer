@@ -45,6 +45,7 @@ namespace acr
 	class Mesh
 	{
 	public:
+		math::vec3 localCentroid;
 
 		__host__ __device__
 		Mesh() = default;

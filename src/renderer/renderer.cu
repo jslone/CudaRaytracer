@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iostream>
 #include <cuda_gl_interop.h>
+#include <string>
 
 namespace acr
 {
@@ -345,6 +346,11 @@ namespace acr
 		}
 	}
 
+	int frameCount = 0;
+	int frameMod = 30;
+	float frameRate = 0.0f;
+	int oldElapsedTime = 0;
+
 	void Renderer::render()
 	{
 		// bind draw buffer to device ptr
@@ -379,6 +385,8 @@ namespace acr
 			std::cerr << "glTexImage2D: " << gluErrorString(glErr) << std::endl;
 		}
 
+		
+
 		// draw fullscreen quad
 		glBegin(GL_QUADS);
 			glTexCoord2f( 0, 1.0f);
@@ -390,10 +398,28 @@ namespace acr
 			glTexCoord2f(1.0f,1.0f);
 			glVertex3f(1.0f,0,0);
 		glEnd();
-		
+
+		/*glColor3f(1, 1, 1);
+		glRasterPos2f(10, 10);
+
+		std::string frameRateString = std::to_string(frameRate) + " fps";
+		for (int i = 0; i < frameRateString.length(); i++) {
+			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, frameRateString[i]);
+		}*/
+
 		// swap buffers
 		glutSwapBuffers();
 		glutPostRedisplay();
+
+		// update framerate
+		if (frameCount % frameMod == 0 && frameCount != 0){
+			int elapsed = glutGet(GLUT_ELAPSED_TIME);
+			float timeInterval = float(elapsed - oldElapsedTime) / float(1000);
+			frameRate = float(frameMod) / timeInterval;
+			//printf("Framerate: [%f]\n", frameRate);
+			oldElapsedTime = elapsed;
+		}
+		frameCount++;
 	}
 
 }

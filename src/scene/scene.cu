@@ -76,22 +76,24 @@ namespace acr
 		printf("Successfully loaded %d material(s).\n", materials.size());
 
 		//Load meshes
-		loadMeshes(scene);
+		thrust::host_vector<Mesh> hMeshes(scene->mNumMeshes);
+		loadMeshes(scene,hMeshes);
 		printf("Successfully loaded %d mesh(es).\n", meshes.size());
 
 		//Load object hierarchy
-		loadObjects(scene,camName,lightMap,hLights);
+		loadObjects(scene,camName,lightMap,hLights,hMeshes);
 		printf("Successfully loaded hierarchy.\n");
 		
 		lights = vector<Light>(hLights);
+		meshes = vector<Mesh>(hMeshes);
 
 		printf("Done loading.\n");
 	}
 
 	__host__
-	void Scene::loadMeshes(const aiScene* scene)
+	void Scene::loadMeshes(const aiScene* scene, thrust::host_vector<Mesh> &hMeshes)
 	{
-		meshes = vector<Mesh>(thrust::host_vector<Mesh>(scene->mMeshes, scene->mMeshes + scene->mNumMeshes));
+		hMeshes = thrust::host_vector<Mesh>(scene->mMeshes, scene->mMeshes + scene->mNumMeshes);
 	}
 
 	__host__
@@ -128,19 +130,19 @@ namespace acr
 	}
 	
 	__host__
-	void Scene::loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights)
+		void Scene::loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes)
 	{
 		thrust::host_vector<Object> objs;
-		rootIndex = loadObject(scene->mRootNode, NULL, objs, camName, lightMap, hLights);
+		rootIndex = loadObject(scene->mRootNode, NULL, objs, camName, lightMap, hLights, hMeshes);
 		std::cout << rootIndex << std::endl;
 		objects = vector<Object>(objs);
 	}
 
 	__host__
-	int Scene::loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &camName, std::unordered_map<std::string,int> &lightMap, thrust::host_vector<Light> &hLights)
+		int Scene::loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &camName, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes)
 	{
 		// Initialize space, meshes, transforms
-		Object tmp(node,objs.size(),parent);
+		Object tmp(node,objs.size(),parent, hMeshes);
 		objs.push_back(tmp);
 		tmp.meshes.clear();
 		tmp.children.clear();
@@ -178,7 +180,7 @@ namespace acr
 		thrust::host_vector<int> children(node->mNumChildren);
 		for(int i = 0; i < node->mNumChildren; i++)
 		{
-			children[i] = loadObject(node->mChildren[i], &tmp, objs, camName, lightMap, hLights);
+			children[i] = loadObject(node->mChildren[i], &tmp, objs, camName, lightMap, hLights, hMeshes);
 		}
 		objs[i].children = vector<int>(children);
 		
@@ -327,6 +329,7 @@ namespace acr
 		, globalNormalTransform(obj.globalNormalTransform)
 		, globalInverseTransform(obj.globalInverseTransform)
 		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
+		, globalCentroid(obj.globalCentroid)
 	{
 		for(int i = 0; i < sizeof(name); i++)
 		{
@@ -343,6 +346,7 @@ namespace acr
 		, globalNormalTransform(obj.globalNormalTransform)
 		, globalInverseTransform(obj.globalInverseTransform)
 		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
+		, globalCentroid(obj.globalCentroid)
 	{
 		for(int i = 0; i < sizeof(name); i++)
 		{
@@ -350,7 +354,7 @@ namespace acr
 		}
 	}
 
-	Object::Object(const aiNode *node, int index, Object *parent)
+	Object::Object(const aiNode *node, int index, Object *parent, thrust::host_vector<Mesh> &hMeshes)
 		: index(index)
 		, parentIndex(parent ? parent->index : -1)
 	{
@@ -361,7 +365,22 @@ namespace acr
 		globalNormalTransform = math::transpose(math::inverse(math::mat3(globalTransform)));
 		globalInverseNormalTransform = math::inverse(globalNormalTransform);
 
-		meshes = vector<int>(thrust::host_vector<int>(node->mMeshes, node->mMeshes + node->mNumMeshes));
+		thrust::host_vector<int> objMeshes = thrust::host_vector<int>(node->mMeshes, node->mMeshes + node->mNumMeshes);
+
+		// Get global centroid
+		if (objMeshes.size() > 0){
+
+			math::vec3 sumCentroids(0, 0, 0);
+			for (int i = 0; i < objMeshes.size(); i++){
+				sumCentroids += hMeshes[objMeshes[i]].localCentroid;
+			}
+
+			math::vec3 avgCentroid = sumCentroids / float(objMeshes.size());
+			globalCentroid = math::translate(globalTransform, avgCentroid);
+		}
+
+		// Flush object's meshes to GPU
+		meshes = vector<int>(objMeshes);
 	}
 
 	bool Object::intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshMap)
