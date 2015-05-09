@@ -32,7 +32,7 @@ namespace acr
 		const static size_t MAX_SIZE = (1 << (MAX_DEPTH - 1));
 	private:
 
-		class Node
+		struct Node
 		{
 			uint32_t start, end;
 			float left, right;
@@ -137,6 +137,9 @@ namespace acr
 
 			rBB.min[axis] = minR;
 			rBB.max[axis] = maxR;
+
+			tree[index].left = maxL;
+			tree[index].right = minR;
 
 			if (sift(tree, getLeftChildIdx(index), lBB, objs, start, i) ||
 				sift(tree, getRightChildIdx(index), rBB, objs, i, end))
