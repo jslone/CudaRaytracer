@@ -51,6 +51,7 @@ namespace acr
 	{
 	public:
 		math::vec3 localCentroid;
+		BoundingBox boundingBox;
 
 		__host__ __device__
 		Mesh() = default;
