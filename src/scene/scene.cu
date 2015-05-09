@@ -324,7 +324,7 @@ namespace acr
 		, globalNormalTransform(obj.globalNormalTransform)
 		, globalInverseTransform(obj.globalInverseTransform)
 		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
-		, globalCentroid(obj.globalCentroid)
+		, centroid(obj.centroid)
 	{
 		for(int i = 0; i < sizeof(name); i++)
 		{
@@ -341,7 +341,7 @@ namespace acr
 		, globalNormalTransform(obj.globalNormalTransform)
 		, globalInverseTransform(obj.globalInverseTransform)
 		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
-		, globalCentroid(obj.globalCentroid)
+		, centroid(obj.centroid)
 	{
 		for(int i = 0; i < sizeof(name); i++)
 		{
@@ -388,7 +388,7 @@ namespace acr
 		globalInverseNormalTransform = math::inverse(globalNormalTransform);
 
 		thrust::host_vector<int> objMeshes = thrust::host_vector<int>(node->mMeshes, node->mMeshes + node->mNumMeshes);
-		globalCentroid = math::vec3(0, 0, 0);
+		centroid = math::vec3(0, 0, 0);
 		boundingBox.min = math::vec3(0, 0, 0);
 		boundingBox.max = math::vec3(0, 0, 0);
 
@@ -399,7 +399,7 @@ namespace acr
 			math::vec3 maxBound(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 			math::vec3 sumCentroids(0, 0, 0);
 			for (int i = 0; i < objMeshes.size(); i++){
-				sumCentroids += hMeshes[objMeshes[i]].localCentroid;
+				sumCentroids += hMeshes[objMeshes[i]].centroid;
 
 				minBound = math::min(minBound, hMeshes[objMeshes[i]].boundingBox.min);
 				maxBound = math::max(maxBound, hMeshes[objMeshes[i]].boundingBox.max);
@@ -418,7 +418,7 @@ namespace acr
 			printf("\n");*/
 
 			math::vec3 avgCentroid = sumCentroids / float(objMeshes.size());
-			globalCentroid = math::translate(globalTransform, avgCentroid);
+			centroid = math::translate(globalTransform, avgCentroid);
 		}
 
 		// Flush object's meshes to GPU

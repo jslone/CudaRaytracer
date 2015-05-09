@@ -35,7 +35,7 @@ namespace acr
 		boundingBox.max = maxBound;
 
 		//Average to get centroid
-		localCentroid = sumVertices / (float)aiMesh->mNumVertices;
+		centroid = sumVertices / (float)aiMesh->mNumVertices;
 
 		std::cout << "\b]" << std::endl;
 		vertices = vector<Vertex>(vs);
