@@ -8,7 +8,7 @@ A real-time GPU raytracer created using CUDA and adaptive thread-block allocatio
 
 ### Get excited for:
 * Bounding interval hierarchies to ammortize the cost of intersections from linear to logarithmic time
-* Adaptive thread-block assignment of rays
+* Adaptive GPU thread-block assignment of rays
 
 # Sneak Peek - Cornell Box Renders
 
