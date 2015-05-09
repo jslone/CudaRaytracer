@@ -131,8 +131,15 @@ namespace acr
 		rootIndex = loadObject(scene->mRootNode, NULL, objs, camName, lightMap, hLights, hMeshes);
 		std::cout << rootIndex << std::endl;
 
-		BoundingBox bb;
-		bih = BIH<Object>(objs,bb);
+		boundingBox.max = math::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		boundingBox.min = math::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+
+		for (int i = 0; i < objs.size(); i++){
+			boundingBox.max = math::max(boundingBox.max, objs[i].boundingBox.max);
+			boundingBox.min = math::min(boundingBox.min, objs[i].boundingBox.min);
+		}
+
+		bih = BIH<Object>(objs,boundingBox);
 		objects = vector<Object>(objs);
 	}
 
@@ -328,6 +335,7 @@ namespace acr
 		, globalInverseTransform(obj.globalInverseTransform)
 		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
 		, centroid(obj.centroid)
+		, boundingBox(obj.boundingBox)
 	{
 	}
 	
@@ -341,6 +349,7 @@ namespace acr
 		, globalInverseTransform(obj.globalInverseTransform)
 		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
 		, centroid(obj.centroid)
+		, boundingBox(obj.boundingBox)
 	{
 	}
 
@@ -406,7 +415,7 @@ namespace acr
 			//Global bounding box transform
 			boundingBox = transformBoundingBox(localBoundingBox);
 
-			/*printf("\n----------> BoundingBox[%s]\n", name);
+			/*printf("\n----------> BoundingBox\n");
 			printf("min(%f, %f, %f)\n", boundingBox.min.x, boundingBox.min.y, boundingBox.min.z);
 			printf("max(%f, %f, %f)\n", boundingBox.max.x, boundingBox.max.y, boundingBox.max.z);
 			printf("\n");*/

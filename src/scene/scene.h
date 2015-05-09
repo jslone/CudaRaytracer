@@ -113,7 +113,8 @@ namespace acr
 		vector<Material>	materials;
 		vector<Mesh>		meshes;
 		vector<Light>		lights;
-		
+
+		BoundingBox boundingBox;
 		int rootIndex;
 		Camera camera;
 	
