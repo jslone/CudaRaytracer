@@ -2,6 +2,7 @@
 #include "assimp/postprocess.h"
 #include "scene.h"
 #include "utils/vector.h"
+//#include "utils/bih.h"
 #include <cstring>
 
 //#define LOAD_VERBOSE
@@ -354,40 +355,29 @@ namespace acr
 		}
 	}
 
-	BoundingBox Object::transformBoundingBox(BoundingBox aabb)
-	{
-		//Returns global bounding box
-		//Algorithm:
-		//	1) Reconstruct 8 local vertices
-		//	2) Transform each to global space
-		//	3) Take min/max of all x,y,z components
-		
-		math::vec3 vertices[8];
-		math::vec3 max = math::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-		math::vec3 min = math::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+	BoundingBox Object::transformBoundingBox(BoundingBox bb)
+	{	
 		BoundingBox bounds;
+		bounds.max = math::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		bounds.min = math::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 
-		float xBounds[2] = { aabb.max.x, aabb.min.x };
-		float yBounds[2] = { aabb.max.y, aabb.min.y };
-		float zBounds[2] = { aabb.max.z, aabb.min.z };
+		//Read bb struct as float array
+		float* coords = (float*)&bb;
 
+		//Iterate through vertices
 		for (int i = 0; i < 8; i++){
-			int x = i >> 2;			//Get 3rd bit
-			int y = (i >> 1) & 1;	//Get 2nd bit
-			int z = i & 1;			//Get 1st bit
+			int xi = 3 * (i >> 2);				//Get 3rd bit, multiply by stride
+			int yi = 3 * ((i >> 1) & 1) + 1;	//Get 2nd bit, multiply by stride, and add offset
+			int zi = 3 * (i & 1) + 2;			//Get 1st bit, multiply by stride, and add offset
 
-			vertices[i] = math::vec3(xBounds[x], yBounds[y], zBounds[z]);
+			//Get local and global vertices
+			math::vec3 localVertex = math::vec3(coords[xi], coords[yi], coords[zi]);
+			math::vec3 globalVertex = math::translate(globalTransform, localVertex);
+
+			//Compare to current min/max
+			bounds.min = math::min(globalVertex, bounds.min);
+			bounds.max = math::max(globalVertex, bounds.max);
 		}
-
-		for (int i = 0; i < 8; i++){
-			math::vec3 globalVertex = math::translate(globalTransform, vertices[i]);
-
-			min = math::min(globalVertex, min);
-			max = math::max(globalVertex, max);
-		}
-
-		bounds.min = min;
-		bounds.max = max;
 
 		return bounds;
 	}
