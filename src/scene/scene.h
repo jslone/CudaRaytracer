@@ -21,7 +21,6 @@ namespace acr
 		Object(const Object &obj);
 		Object(Object &obj);
 
-		char name[64];
 		int index;
 		int parentIndex;
 		math::vec3 centroid;
@@ -107,6 +106,8 @@ namespace acr
 		void loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes);
 
 		int loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &name, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes);
+
+		BIH<Object> bih;
 	public:
 		vector<Object>		objects;
 		vector<Material>	materials;

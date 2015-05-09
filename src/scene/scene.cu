@@ -130,6 +130,9 @@ namespace acr
 		thrust::host_vector<Object> objs;
 		rootIndex = loadObject(scene->mRootNode, NULL, objs, camName, lightMap, hLights, hMeshes);
 		std::cout << rootIndex << std::endl;
+
+		BoundingBox bb;
+		bih = BIH<Object>(objs,bb);
 		objects = vector<Object>(objs);
 	}
 
@@ -326,10 +329,6 @@ namespace acr
 		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
 		, centroid(obj.centroid)
 	{
-		for(int i = 0; i < sizeof(name); i++)
-		{
-			name[i] = obj.name[i];
-		}
 	}
 	
 	Object::Object(Object &obj)
@@ -343,10 +342,6 @@ namespace acr
 		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
 		, centroid(obj.centroid)
 	{
-		for(int i = 0; i < sizeof(name); i++)
-		{
-			name[i] = obj.name[i];
-		}
 	}
 
 	BoundingBox Object::transformBoundingBox(BoundingBox bb)
@@ -380,7 +375,6 @@ namespace acr
 		: index(index)
 		, parentIndex(parent ? parent->index : -1)
 	{
-		std::strncpy(name,node->mName.C_Str(),sizeof(name));
 		getMathMatrix(node->mTransformation,localTransform);
 		globalTransform = parent ? parent->globalTransform * localTransform : localTransform;
 		globalInverseTransform = math::inverse(globalTransform);

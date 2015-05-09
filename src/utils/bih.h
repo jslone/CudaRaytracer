@@ -1,7 +1,8 @@
 #ifndef _BIH_H_
 #define _BIH_H_
 
-#include <vector>
+#include <limits>
+#include <thrust/host_vector.h>
 
 #include "math/math.h"
 #include "geometry/geometry.h"
@@ -13,7 +14,18 @@ namespace acr
 	class BIH
 	{
 	public:
-		BIH(const std::vector<T> &objs);
+		BIH() = default;
+		BIH(const BIH &) = default;
+
+		BIH(const thrust::host_vector<T> &hObjs, const BoundingBox &bb)
+			: objs(hObjs)
+		{
+			thrust::host_vector<Node> hTree(MAX_SIZE);
+
+			sift(hTree, 0, bb, hObjs, 0, hObjs.size());
+
+			tree = vector<Node>(hTree);
+		}
 
 		void intersect(const Ray &r, HitInfo &info);
 
@@ -24,7 +36,8 @@ namespace acr
 		{
 			uint32_t start, end;
 			float left, right;
-			uint8_t axis;
+			uint8_t axis : 2;
+			uint8_t isLeaf : 1;
 		};
 
 		enum AXIS : uint8_t
@@ -52,20 +65,14 @@ namespace acr
 			return &tree[getRightChildIdx(tree.position(n))];
 		}
 
-		void sift(std::vector<Node> tree, int index, const BoundingBox &bb, std::vector<T> objs, size_t start, size_t end)
+		bool sift(thrust::host_vector<Node> tree, int index, const BoundingBox &bb, thrust::host_vector<T> objs, size_t start, size_t end)
 		{
 			tree[index].start = start;
 			tree[index].end = end;
 
-			if (index >= MAX_SIZE)
+			if (index >= MAX_SIZE || start >= end)
 			{
-				return;
-			}
-			if (start == end)
-			{
-				// zero out bb
-				
-				return;
+				return true;
 			}
 
 			// pick axis
@@ -85,13 +92,59 @@ namespace acr
 			float pivot = bb.min[axis] + len / 2;
 
 			// pivot
+
+			float minL = std::numeric_limits<float>::infinity();
+			float maxL = -std::numeric_limits<float>::infinity();
+
+			float minR = std::numeric_limits<float>::infinity();
+			float maxR = -std::numeric_limits<float>::infinity();
+
 			int i = start;
 			int j = end;
-			while (i != j)
+
+			while (i <= j)
 			{
 				const BoundingBox bb = objs[i].boundingBox;
 
+				float pos = objs[i].centroid[axis];
+				float minB = bb.min[axis];
+				float maxB = bb.max[axis];
+
+				if (pos <= pivot)
+				{
+					minL = math::min(minL, minB);
+					maxL = math::max(maxL, maxB);
+					i++;
+				}
+				else
+				{
+					minL = math::min(minL, minB);
+					maxL = math::max(maxL, maxB);
+					if (i != j)
+					{
+						std::swap(objs[i], objs[j]);
+					}
+					j--;
+				}
 			}
+
+			// Recurse on left and right
+			BoundingBox lBB = bb;
+			BoundingBox rBB = bb;
+
+			lBB.min[axis] = minL;
+			lBB.max[axis] = maxL;
+
+			rBB.min[axis] = minR;
+			rBB.max[axis] = maxR;
+
+			if (sift(tree, getLeftChildIdx(index), lBB, objs, start, i) ||
+				sift(tree, getRightChildIdx(index), rBB, objs, i, end))
+			{
+				tree[index].isLeaf = true;
+			}
+
+			return false;
 		}
 
 		vector<Node> tree;
