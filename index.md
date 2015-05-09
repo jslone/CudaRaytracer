@@ -7,7 +7,7 @@ title: Sneak Peak
 A real-time GPU raytracer created using CUDA and adaptive thread-block allocation and assignment of rays.
 
 ### Get excited for:
-* Bounding interval hierarchies to ammortize the cost of intersections from linear to logarithmic time
+* Bounding interval hierarchies to amortize the cost of intersections from linear to logarithmic time
 * Adaptive GPU thread-block assignment of rays
 
 # Sneak Peek - Cornell Box Renders
