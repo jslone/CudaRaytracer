@@ -1,6 +1,6 @@
 #include <cstdlib>
 #include <cuda.h>
-#include "geometry.h"
+#include "mesh.h"
 
 namespace acr
 {

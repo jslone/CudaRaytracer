@@ -1,14 +1,15 @@
 #ifndef _GEOMETRY_H_
 #define _GEOMETRY_H_
 
-#include "assimp/mesh.h"
 #include "math/math.h"
 #include "materials/materials.h"
-#include "scene/camera.h"
-#include "utils/vector.h"
 
 namespace acr
 {
+	struct BoundingBox
+	{
+		math::vec3 min, max;
+	};
 
 	struct Vertex
 	{
@@ -32,42 +33,6 @@ namespace acr
 	{
 		float t;
 		Vertex point;
-		uint32_t materialIndex;
-	};
-
-	struct BoundingBox
-	{
-		math::vec3 min, max;
-	};
-
-	class Shape
-	{
-	public:
-		virtual bool intersect(const Ray &r, HitInfo &info) = 0;
-	};
-
-
-	class Mesh
-	{
-	public:
-		math::vec3 localCentroid;
-		BoundingBox boundingBox;
-
-		__host__ __device__
-		Mesh() = default;
-		
-		__host__
-		Mesh(const aiMesh *aiMesh);
-
-		__host__ __device__
-		~Mesh();
-
-		__host__ __device__
-		bool intersect(const Ray &r, HitInfo &info);
-	private:
-		vector<Vertex>  vertices;
-		vector<Face>    faces;
-
 		uint32_t materialIndex;
 	};
 

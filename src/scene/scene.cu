@@ -2,7 +2,7 @@
 #include "assimp/postprocess.h"
 #include "scene.h"
 #include "utils/vector.h"
-//#include "utils/bih.h"
+#include "utils/bih.h"
 #include <cstring>
 
 //#define LOAD_VERBOSE

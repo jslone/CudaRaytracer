@@ -37,6 +37,9 @@ namespace acr
 		size_t size();
 
 		__device__ __host__
+		size_t position(const T *elem);
+
+		__device__ __host__
 		void clear();
 		
 		__host__
@@ -88,6 +91,12 @@ namespace acr
 	size_t vector<T>::size()
 	{
 		return devSize;
+	}
+
+	template<typename T>
+	size_t vector<T>::position(const T *elem)
+	{
+		return devPtr - elem;
 	}
 	
 	template<typename T>
