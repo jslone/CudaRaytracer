@@ -23,12 +23,12 @@ namespace acr
 		__host__ __device__
 		~Mesh();
 
-		__host__ __device__
+		__device__
 		bool intersect(const Ray &r, HitInfo &info);
 	private:
 		vector<Vertex>  vertices;
-		vector<Face>    faces;
 
+		BIH<Face>		faces;
 		uint32_t materialIndex;
 	};
 

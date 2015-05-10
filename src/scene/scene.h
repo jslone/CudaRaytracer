@@ -37,8 +37,14 @@ namespace acr
 		__host__
 		BoundingBox transformBoundingBox(BoundingBox aabb);
 		
-		__host__ __device__
+		__device__
 		bool intersect(const Ray &r, HitInfo &info, const void* meshes);
+
+		__host__ __device__ inline
+		const BoundingBox& getBoundingBox(void *) { return boundingBox; }
+
+		__host__ __device__ inline
+		const math::vec3& getCentroid(void *) { return centroid; }
 
 		friend std::ostream& operator<<(std::ostream& os, const Object &obj);
 	};
@@ -108,9 +114,8 @@ namespace acr
 
 		int loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &name, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes);
 
-		BIH<Object> bih;
+		BIH<Object>			objects;
 	public:
-		vector<Object>		objects;
 		vector<Material>	materials;
 		vector<Mesh>		meshes;
 		vector<Light>		lights;

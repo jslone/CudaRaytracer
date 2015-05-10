@@ -10,34 +10,36 @@
 
 namespace acr
 {
-	template<typename T, size_t MAX_DEPTH = 5>
+	template<typename T, size_t MAX_DEPTH = 6>
 	class BIH
 	{
 	public:
 		BIH() = default;
 		BIH(const BIH &) = default;
 
-		BIH(thrust::host_vector<T> &hObjs, const BoundingBox &bb)
+		BIH(thrust::host_vector<T> &hObjs, const BoundingBox &bb, void *data)
 			: boundingBox(bb)
 		{
-			sift(0, boundingBox, hObjs, 0, hObjs.size());
+			sift(0, boundingBox, hObjs, 0, hObjs.size(), data);
 			objs = vector<T>(hObjs);
+			std::cout << *this << std::endl;
 		}
 
+		__device__
 		bool intersect(const Ray &r, HitInfo &info, void *data)
 		{
 			return treeIntersect(r, info, data, boundingBox);
 		}
 
-		const static size_t MAX_SIZE = (1 << (MAX_DEPTH - 1));
+		const static size_t MAX_SIZE = (1 << MAX_DEPTH) - 1;
 	private:
 
 		struct Node
 		{
 			uint32_t start, end;
 			float left, right;
-			uint8_t axis;// : 2;
-			uint8_t isLeaf;// : 1;
+			uint8_t axis : 2;
+			uint8_t isLeaf : 1;
 		};
 
 		enum AXIS : uint8_t
@@ -45,30 +47,36 @@ namespace acr
 			X = 0, Y, Z
 		};
 
+		__device__ __host__ inline
 		size_t getLeftChildIdx(size_t idx)
 		{
 			return 2 * idx + 1;
 		}
 
+		__device__ __host__ inline
 		size_t getRightChildIdx(size_t idx)
 		{
 			return 2 * idx + 2;
 		}
 
+		__device__ __host__ inline
 		Node* getLeftChild(const Node *n)
 		{
 			return &tree[getLeftChildIdx(tree - n)];
 		}
 
+		__device__ __host__ inline
 		Node* getRightChild(const Node *n)
 		{
 			return &tree[getRightChildIdx(tree - n)];
 		}
 
-		bool sift(int index, const BoundingBox &bb, thrust::host_vector<T> &hObjs, size_t start, size_t end)
+		bool sift(int index, const BoundingBox &bb, thrust::host_vector<T> &hObjs, size_t start, size_t end, void *data)
 		{	
 			if (index >= MAX_SIZE)
+			{
 				return true;
+			}
 
 			tree[index].start = start;
 			tree[index].end = end;
@@ -96,33 +104,33 @@ namespace acr
 			float pivot = bb.min[axis] + len / 2;
 
 			// pivot
-			float minL = bb.max[axis];
-			float maxL = bb.min[axis];
+			BoundingBox lBB;
+			BoundingBox rBB;
 
-			float minR = bb.max[axis];
-			float maxR = bb.min[axis];
+			lBB.min = bb.max;
+			lBB.max = bb.min;
+
+			rBB = lBB;
 
 			int i = start;
 			int j = end - 1;
 
 			while (i <= j)
 			{
-				const BoundingBox bb = hObjs[i].boundingBox;
+				const BoundingBox bb = hObjs[i].getBoundingBox(data);
 
-				float pos = hObjs[i].centroid[axis];
-				float minB = bb.min[axis];
-				float maxB = bb.max[axis];
+				float pos = hObjs[i].getCentroid(data)[axis];
 
 				if (pos <= pivot)
 				{
-					minL = math::min(minL, minB);
-					maxL = math::max(maxL, maxB);
+					lBB.min = math::min(lBB.min, bb.min);
+					lBB.max = math::max(lBB.max, bb.max);
 					i++;
 				}
 				else
 				{
-					minR = math::min(minR, minB);
-					maxR = math::max(maxR, maxB);
+					rBB.min = math::min(rBB.min, bb.min);
+					rBB.max = math::max(rBB.max, bb.max);
 					if (i != j)
 					{
 						std::swap(hObjs[i], hObjs[j]);
@@ -132,41 +140,31 @@ namespace acr
 			}
 
 			// Recurse on left and right
-			BoundingBox lBB = bb;
-			BoundingBox rBB = bb;
-
-			lBB.min[axis] = minL;
-			lBB.max[axis] = maxL;
-
-			rBB.min[axis] = minR;
-			rBB.max[axis] = maxR;
-
-			tree[index].left = maxL;
-			tree[index].right = minR;
+			
+			tree[index].left = lBB.max[axis];
+			tree[index].right = rBB.min[axis];
 			tree[index].axis = axis;
 
-			bool left = sift(getLeftChildIdx(index), lBB, hObjs, start, i);
-			bool right = sift(getRightChildIdx(index), rBB, hObjs, i, end);
-			tree[index].isLeaf = left && right;
-			std::cout << "Node: " << index << "/" << MAX_SIZE
-				<< " [" << tree[index].start << ":" << tree[index].end << "]"
-				<< (tree[index].isLeaf ? " is leaf" : "") << std::endl
-				<< "Bounding Box: " << math::to_string(bb.min) << "," << math::to_string(bb.max) << std::endl;
+			bool left = sift(getLeftChildIdx(index), lBB, hObjs, start, i, data);
+			bool right = sift(getRightChildIdx(index), rBB, hObjs, i, end, data);
+			tree[index].isLeaf = left || right;
 			return false;
 		}
 
+		__device__
 		bool treeIntersect(const Ray &r, HitInfo &info, const void *data, const BoundingBox &bb)
 		{
 			bool intersected = false;
 			
-			int treeIdx[MAX_DEPTH];
-			BoundingBox treeBB[MAX_DEPTH];
+			int treeIdx[MAX_DEPTH+2];
+			BoundingBox treeBB[MAX_DEPTH+2];
 			int depth = 0;
 
 			treeIdx[0] = 0;
 			treeBB[0] = bb;
 
 			BoundingBox::Args bbArgs;
+			
 			bbArgs.invD = 1.0f / r.d;
 			bbArgs.sign.x = bbArgs.invD.x < 0;
 			bbArgs.sign.y = bbArgs.invD.y < 0;
@@ -215,6 +213,21 @@ namespace acr
 			}
 
 			return intersected;
+		}
+
+		std::ostream& outputNode(std::ostream &os, uint32_t index, uint32_t depth)
+		{
+			os << std::string(depth, '\t') << index << ": [" << tree[index].start << ":" << tree[index].end << "]" << std::endl;
+			if (!tree[index].isLeaf)
+			{
+				outputNode(outputNode(os, getLeftChildIdx(index), depth + 1), getRightChildIdx(index), depth + 1);
+			}
+			return os;
+		}
+
+		friend std::ostream& operator<<(std::ostream& os, BIH<T,MAX_DEPTH> &bih)
+		{
+			return bih.outputNode(os, 0, 0);
 		}
 
 		BoundingBox boundingBox;

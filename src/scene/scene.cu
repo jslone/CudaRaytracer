@@ -95,12 +95,6 @@ namespace acr
 	void Scene::loadMaterials(const aiScene* scene)
 	{
 		thrust::host_vector<Material> mats(scene->mMaterials, scene->mMaterials + scene->mNumMaterials);
-		for (auto&& mat : mats)
-		{
-			Color3 &c = mat.diffuse;
-			std::cout << "Diffuse: " << math::to_string(c) << std::endl;
-		}
-
 		materials = vector<Material>(thrust::host_vector<Material>(scene->mMaterials, scene->mMaterials + scene->mNumMaterials));
 	}
 	
@@ -134,13 +128,27 @@ namespace acr
 		boundingBox.max = math::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 		boundingBox.min = math::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 
-		for (int i = 0; i < objs.size(); i++){
-			boundingBox.max = math::max(boundingBox.max, objs[i].boundingBox.max);
-			boundingBox.min = math::min(boundingBox.min, objs[i].boundingBox.min);
+		struct has_mesh
+		{
+			__device__ __host__
+			bool operator()(const Object &obj)
+			{
+				return obj.meshes.size() > 0;
+			}
+		};
+
+		thrust::host_vector<Object>  filteredCopyObjs(objs.size());
+		thrust::host_vector<Object>::iterator end = thrust::copy_if(objs.begin(), objs.end(), filteredCopyObjs.begin(), has_mesh());
+
+		thrust::host_vector<Object> filteredObjs(filteredCopyObjs.begin(), end);
+
+		for (int i = 0; i < filteredObjs.size(); i++)
+		{
+			boundingBox.max = math::max(boundingBox.max, filteredObjs[i].boundingBox.max);
+			boundingBox.min = math::min(boundingBox.min, filteredObjs[i].boundingBox.min);
 		}
 
-		bih = BIH<Object>(objs,boundingBox);
-		objects = vector<Object>(objs);
+		objects = BIH<Object>(filteredObjs,boundingBox,nullptr);
 	}
 
 	__host__
@@ -195,13 +203,7 @@ namespace acr
 
 	bool Scene::intersect(const Ray &r, HitInfo &info)
 	{
-		/*bool intersected = false;
-		for (int i = 0; i < objects.size(); i++)
-		{
-			intersected |= objects[i].intersect(r, info, &meshes);
-		}
-		return intersected;*/
-		return bih.intersect(r, info, &meshes[0]);
+		return objects.intersect(r, info, &meshes);
 	}
 
 	Color3 Scene::pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state)
@@ -389,10 +391,10 @@ namespace acr
 			//Global bounding box transform
 			boundingBox = transformBoundingBox(localBoundingBox);
 
-			printf("\n----------> BoundingBox\n");
+			/*printf("\n----------> BoundingBox\n");
 			printf("min(%f, %f, %f)\n", boundingBox.min.x, boundingBox.min.y, boundingBox.min.z);
 			printf("max(%f, %f, %f)\n", boundingBox.max.x, boundingBox.max.y, boundingBox.max.z);
-			printf("\n");
+			printf("\n");*/
 
 			math::vec3 avgCentroid = sumCentroids / float(objMeshes.size());
 			centroid = math::translate(globalTransform, avgCentroid);

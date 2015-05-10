@@ -28,10 +28,10 @@ namespace acr
 		T& operator[] (size_t pos) const;
 		
 		__device__ __host__
-		size_t size();
+		size_t size() const;
 
 		__device__ __host__
-		size_t position(const T *elem);
+		size_t position(const T *elem) const;
 
 		__device__ __host__
 		void clear();
@@ -67,13 +67,13 @@ namespace acr
 	}
 
 	template<typename T>
-	size_t vector<T>::size()
+	size_t vector<T>::size() const
 	{
 		return devSize;
 	}
 
 	template<typename T>
-	size_t vector<T>::position(const T *elem)
+	size_t vector<T>::position(const T *elem) const
 	{
 		return devPtr - elem;
 	}

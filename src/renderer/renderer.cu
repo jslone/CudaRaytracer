@@ -278,7 +278,7 @@ namespace acr
 				// Absorbtion
 				else
 				{
-					*count = MAX_BOUNCES - N; //Maybe set to MAX_BOUNCES - (N-1);
+					*count += MAX_BOUNCES - N; //Maybe set to MAX_BOUNCES - (N-1);
 					return Color4(c, 1);
 				}
 			}
@@ -309,7 +309,7 @@ namespace acr
 					nr.d = math::reflect(r.d, norm);
 				}
 			}
-			*count = MAX_BOUNCES - (N - 1);
+			*count += MAX_BOUNCES - (N - 1);
 			contribution = Color4(c, 1) + rayColor<N - 1>(nr, nSource, scene, state, count);
 		}
 
@@ -320,7 +320,7 @@ namespace acr
 	__device__ inline
 	Color4 rayColor<0>(const Ray &r, const Color3 source, Scene *scene, curandState state, int* count)
 	{
-		*count = MAX_BOUNCES;
+		*count += MAX_BOUNCES;
 		return Color4(0, 0, 0, 1);
 	}
 
@@ -359,7 +359,7 @@ namespace acr
 		r.o = scene->camera.position;
 		r.d = get_pixel_dir(scene->camera, i, -j);
 
-		Color4 contribution = rayColor<MAX_BOUNCES>(r, Color3(1,1,1), scene, state, devParams->pixelKeys+index);
+		Color4 contribution = rayColor<MAX_BOUNCES>(r, Color3(1,1,1), scene, state, devParams->pixelKeys+oldIndex);
 		
 		if (frames > 0)
 		{
@@ -389,7 +389,7 @@ namespace acr
 		}
 
 		// call kernel to render pixels then draw to screen
-		dim3 block(16,16);
+		dim3 block(16, 16);
 		dim3 grid((dim.x + block.x - 1) / block.x, (dim.y + block.y - 1) / block.y);
 
 		//std::cout << "frame count: " << framesNoMove << std::endl;
@@ -429,7 +429,8 @@ namespace acr
 		glutPostRedisplay();
 
 		// reassign pixels
-		if (frameCount % pixelMapFrameMod == 0){
+		if (false && frameCount % pixelMapFrameMod == pixelMapFrameMod - 1)
+		{
 			thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());
 			thrust::fill(pixelKeys.begin(), pixelKeys.end(), 0);
 		}
