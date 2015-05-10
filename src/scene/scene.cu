@@ -125,7 +125,7 @@ namespace acr
 	}
 	
 	__host__
-		void Scene::loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes)
+	void Scene::loadObjects(const aiScene *scene, std::string &camName, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes)
 	{
 		thrust::host_vector<Object> objs;
 		rootIndex = loadObject(scene->mRootNode, NULL, objs, camName, lightMap, hLights, hMeshes);
@@ -144,7 +144,7 @@ namespace acr
 	}
 
 	__host__
-		int Scene::loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &camName, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes)
+	int Scene::loadObject(const aiNode* node, Object *parent, thrust::host_vector<Object> &objs, std::string &camName, std::unordered_map<std::string, int> &lightMap, thrust::host_vector<Light> &hLights, thrust::host_vector<Mesh> &hMeshes)
 	{
 		// Initialize space, meshes, transforms
 		Object tmp(node,objs.size(),parent, hMeshes);
@@ -197,7 +197,7 @@ namespace acr
 		bool intersected = false;
 		for (int i = 0; i < objects.size(); i++)
 		{
-			intersected |= objects[i].intersect(r, info, meshes);
+			intersected |= objects[i].intersect(r, info, &meshes);
 		}
 		return intersected;
 	}
@@ -428,8 +428,10 @@ namespace acr
 		meshes = vector<int>(objMeshes);
 	}
 
-	bool Object::intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshMap)
+	bool Object::intersect(const Ray &r, HitInfo &info, const void* meshesPtr)
 	{
+		const vector<Mesh> &meshMap = *(vector<Mesh>*)meshesPtr;
+
 		Ray lr;
 		lr.o = math::translate(globalInverseTransform, r.o);
 		lr.d = math::translaten(globalInverseNormalTransform, r.d);
