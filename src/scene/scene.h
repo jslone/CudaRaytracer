@@ -18,8 +18,7 @@ namespace acr
 	public:
 		Object() = default;
 		Object(const aiNode *node, int index, Object *parent, thrust::host_vector<Mesh> &hMeshes);
-		Object(const Object &obj);
-		Object(Object &obj);
+		Object(const Object &obj) = default;
 
 		int index;
 		int parentIndex;
@@ -40,6 +39,8 @@ namespace acr
 		
 		__host__ __device__
 		bool intersect(const Ray &r, HitInfo &info, const void* meshes);
+
+		friend std::ostream& operator<<(std::ostream& os, const Object &obj);
 	};
 
 	class Light

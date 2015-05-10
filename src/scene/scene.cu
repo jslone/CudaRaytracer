@@ -139,6 +139,7 @@ namespace acr
 			boundingBox.min = math::min(boundingBox.min, objs[i].boundingBox.min);
 		}
 
+
 		bih = BIH<Object>(objs,boundingBox);
 		objects = vector<Object>(objs);
 	}
@@ -149,6 +150,7 @@ namespace acr
 		// Initialize space, meshes, transforms
 		Object tmp(node,objs.size(),parent, hMeshes);
 		objs.push_back(tmp);
+
 		tmp.meshes.clear();
 		tmp.children.clear();
 
@@ -194,12 +196,13 @@ namespace acr
 
 	bool Scene::intersect(const Ray &r, HitInfo &info)
 	{
-		bool intersected = false;
+		/*bool intersected = false;
 		for (int i = 0; i < objects.size(); i++)
 		{
 			intersected |= objects[i].intersect(r, info, &meshes);
 		}
-		return intersected;
+		return intersected;*/
+		return bih.intersect(r, info, &meshes[0]);
 	}
 
 	Color3 Scene::pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state)
@@ -325,34 +328,6 @@ namespace acr
 		}
 	}
 
-	Object::Object(const Object &obj)
-		: index(obj.index)
-		, parentIndex(obj.parentIndex)
-		, children(obj.children)
-		, meshes(obj.meshes)
-		, globalTransform(obj.globalTransform)
-		, globalNormalTransform(obj.globalNormalTransform)
-		, globalInverseTransform(obj.globalInverseTransform)
-		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
-		, centroid(obj.centroid)
-		, boundingBox(obj.boundingBox)
-	{
-	}
-	
-	Object::Object(Object &obj)
-		: index(obj.index)
-		, parentIndex(obj.parentIndex)
-		, children(obj.children)
-		, meshes(obj.meshes)
-		, globalTransform(obj.globalTransform)
-		, globalNormalTransform(obj.globalNormalTransform)
-		, globalInverseTransform(obj.globalInverseTransform)
-		, globalInverseNormalTransform(obj.globalInverseNormalTransform)
-		, centroid(obj.centroid)
-		, boundingBox(obj.boundingBox)
-	{
-	}
-
 	BoundingBox Object::transformBoundingBox(BoundingBox bb)
 	{	
 		BoundingBox bounds;
@@ -415,10 +390,10 @@ namespace acr
 			//Global bounding box transform
 			boundingBox = transformBoundingBox(localBoundingBox);
 
-			/*printf("\n----------> BoundingBox\n");
+			printf("\n----------> BoundingBox\n");
 			printf("min(%f, %f, %f)\n", boundingBox.min.x, boundingBox.min.y, boundingBox.min.z);
 			printf("max(%f, %f, %f)\n", boundingBox.max.x, boundingBox.max.y, boundingBox.max.z);
-			printf("\n");*/
+			printf("\n");
 
 			math::vec3 avgCentroid = sumCentroids / float(objMeshes.size());
 			centroid = math::translate(globalTransform, avgCentroid);
@@ -461,5 +436,13 @@ namespace acr
 		}
 
 		return intersected;
+	}
+
+	std::ostream& operator<<(std::ostream& os, const Object &obj)
+	{
+		os << "Object [" << obj.index << "]" << std::endl;
+		os << "\tBoundingBox: <" << math::to_string(obj.boundingBox.min) << "," << math::to_string(obj.boundingBox.max) << ">" << std::endl;
+		os << "\tMeshes: " << &obj.meshes[0] << std::endl;
+		return os;
 	}
 }

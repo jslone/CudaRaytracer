@@ -17,11 +17,11 @@ namespace acr
 		BIH() = default;
 		BIH(const BIH &) = default;
 
-		BIH(const thrust::host_vector<T> &hObjs, const BoundingBox &bb)
+		BIH(thrust::host_vector<T> &hObjs, const BoundingBox &bb)
 			: boundingBox(bb)
-			, objs(hObjs)
 		{
 			sift(0, boundingBox, hObjs, 0, hObjs.size());
+			objs = vector<T>(hObjs);
 		}
 
 		bool intersect(const Ray &r, HitInfo &info, void *data)
@@ -36,8 +36,8 @@ namespace acr
 		{
 			uint32_t start, end;
 			float left, right;
-			uint8_t axis : 2;
-			uint8_t isLeaf : 1;
+			uint8_t axis;// : 2;
+			uint8_t isLeaf;// : 1;
 		};
 
 		enum AXIS : uint8_t
@@ -65,13 +65,17 @@ namespace acr
 			return &tree[getRightChildIdx(tree - n)];
 		}
 
-		bool sift(int index, const BoundingBox &bb, thrust::host_vector<T> objs, size_t start, size_t end)
-		{
+		bool sift(int index, const BoundingBox &bb, thrust::host_vector<T> &hObjs, size_t start, size_t end)
+		{	
+			if (index >= MAX_SIZE)
+				return true;
+
 			tree[index].start = start;
 			tree[index].end = end;
 
-			if (index >= MAX_SIZE || start >= end)
+			if (start >= end)
 			{
+				tree[index].isLeaf = true;
 				return true;
 			}
 
@@ -92,21 +96,20 @@ namespace acr
 			float pivot = bb.min[axis] + len / 2;
 
 			// pivot
+			float minL = bb.max[axis];
+			float maxL = bb.min[axis];
 
-			float minL = std::numeric_limits<float>::infinity();
-			float maxL = -std::numeric_limits<float>::infinity();
-
-			float minR = std::numeric_limits<float>::infinity();
-			float maxR = -std::numeric_limits<float>::infinity();
+			float minR = bb.max[axis];
+			float maxR = bb.min[axis];
 
 			int i = start;
-			int j = end;
+			int j = end - 1;
 
 			while (i <= j)
 			{
-				const BoundingBox bb = objs[i].boundingBox;
+				const BoundingBox bb = hObjs[i].boundingBox;
 
-				float pos = objs[i].centroid[axis];
+				float pos = hObjs[i].centroid[axis];
 				float minB = bb.min[axis];
 				float maxB = bb.max[axis];
 
@@ -118,11 +121,11 @@ namespace acr
 				}
 				else
 				{
-					minL = math::min(minL, minB);
-					maxL = math::max(maxL, maxB);
+					minR = math::min(minR, minB);
+					maxR = math::max(maxR, maxB);
 					if (i != j)
 					{
-						std::swap(objs[i], objs[j]);
+						std::swap(hObjs[i], hObjs[j]);
 					}
 					j--;
 				}
@@ -140,13 +143,15 @@ namespace acr
 
 			tree[index].left = maxL;
 			tree[index].right = minR;
+			tree[index].axis = axis;
 
-			if (sift(getLeftChildIdx(index), lBB, objs, start, i) ||
-				sift(getRightChildIdx(index), rBB, objs, i, end))
-			{
-				tree[index].isLeaf = true;
-			}
-
+			bool left = sift(getLeftChildIdx(index), lBB, hObjs, start, i);
+			bool right = sift(getRightChildIdx(index), rBB, hObjs, i, end);
+			tree[index].isLeaf = left && right;
+			std::cout << "Node: " << index << "/" << MAX_SIZE
+				<< " [" << tree[index].start << ":" << tree[index].end << "]"
+				<< (tree[index].isLeaf ? " is leaf" : "") << std::endl
+				<< "Bounding Box: " << math::to_string(bb.min) << "," << math::to_string(bb.max) << std::endl;
 			return false;
 		}
 
@@ -190,8 +195,8 @@ namespace acr
 					lBB.max[n.axis] = n.left;
 					rBB.min[n.axis] = n.right;
 
-					bool hitL = lBB.intersect(r, info, args);
-					bool hitR = rBB.intersect(r, info, args);
+					bool hitL = lBB.intersect(r, info, bbArgs);
+					bool hitR = rBB.intersect(r, info, bbArgs);
 
 					if (hitR)
 					{

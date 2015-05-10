@@ -16,16 +16,10 @@ namespace acr
 		vector<T>() = default;
 		
 		__device__ __host__
-		vector<T>(const vector<T> &v);
-
-		__device__ __host__
-		vector<T>(vector<T> &v);
+		vector<T>(const vector<T> &v) = default;
 		
 		__host__
 		vector<T>(const thrust::host_vector<T> &h);
-		
-		__device__ __host__
-		~vector<T>();
 
 		__device__ __host__
 		T& operator[] (size_t pos);
@@ -50,18 +44,6 @@ namespace acr
 	};
 
 	template<typename T>
-	vector<T>::vector(const vector<T> &v)
-		: devPtr(v.devPtr)
-		, devSize(v.devSize)
-	{}
-
-	template<typename T>
-	vector<T>::vector(vector<T> &v)
-		: devPtr(v.devPtr)
-		, devSize(v.devSize)
-	{}
-
-	template<typename T>
 	vector<T>::vector(const thrust::host_vector<T> &h)
 	{
 		devSize = h.size();
@@ -71,9 +53,6 @@ namespace acr
 
 		thrust::copy(h.begin(), h.end(), thrustPtr);
 	}
-
-	template<typename T>
-	vector<T>::~vector() {}
 
 	template<typename T>
 	T& vector<T>::operator[] (size_t pos)
