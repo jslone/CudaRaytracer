@@ -3,18 +3,25 @@
 #include <iostream>
 #include <cuda_gl_interop.h>
 #include <string>
+#include <thrust/scan.h>
+#include <thrust/sequence.h>
+#include <thrust/sort.h>
+
+#define MAX_BOUNCES 5
 
 namespace acr
-{
+{ 
 	struct DevParams
 	{
 		char sceneData[sizeof(Scene)];
-		uint32_t width,height,samples;
+		uint32_t width,height,samples;\
+		int* pixelKeys;
+		int* pixelValues;
 	};
 
 	__constant__
 	DevParams devParams[1];
-	
+
 	Renderer *renderer;
 	void globalRender()
 	{
@@ -119,6 +126,14 @@ namespace acr
 		float fLargest;
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
+
+		// malloc initialize pixel map
+		pixelKeys = thrust::device_vector<int>(dim.x*dim.y);
+		pixelValues = thrust::device_vector<int>(dim.x*dim.y);
+
+		// fill pixel keys and values
+		thrust::fill(pixelKeys.begin(), pixelKeys.end(), 0);
+		thrust::sequence(pixelValues.begin(), pixelValues.end());
 	}
 
 	Renderer::~Renderer()
@@ -156,6 +171,8 @@ namespace acr
 		params.width = dim.x;
 		params.height = dim.y;
 		params.samples = dim.z;
+		params.pixelKeys = thrust::raw_pointer_cast(pixelKeys.data());
+		params.pixelValues = thrust::raw_pointer_cast(pixelValues.data());
 
 		Scene *myScene = (Scene*)&params;
 		myScene->camera.aspectRatio = float(dim.x) / float(dim.y);
@@ -213,11 +230,11 @@ namespace acr
 
 	template<int N>
 	__device__ inline
-	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state);
+	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state, int* count);
 
 	template<int N>
 	__device__ inline
-	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state)
+	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state, int* count)
 	{
 		HitInfo info;
 		info.t = FLT_MAX;
@@ -261,6 +278,7 @@ namespace acr
 				// Absorbtion
 				else
 				{
+					*count = MAX_BOUNCES - N; //Maybe set to MAX_BOUNCES - (N-1);
 					return Color4(c, 1);
 				}
 			}
@@ -291,15 +309,18 @@ namespace acr
 					nr.d = math::reflect(r.d, norm);
 				}
 			}
-			contribution = Color4(c, 1) + rayColor<N - 1>(nr, nSource, scene, state);
+			*count = MAX_BOUNCES - (N - 1);
+			contribution = Color4(c, 1) + rayColor<N - 1>(nr, nSource, scene, state, count);
 		}
+
 		return contribution;
 	}
 
 	template<>
 	__device__ inline
-	Color4 rayColor<0>(const Ray &r, const Color3 source, Scene *scene, curandState state)
+	Color4 rayColor<0>(const Ray &r, const Color3 source, Scene *scene, curandState state, int* count)
 	{
+		*count = MAX_BOUNCES;
 		return Color4(0, 0, 0, 1);
 	}
 
@@ -309,15 +330,20 @@ namespace acr
 		const int width = devParams->width;
 		const int height = devParams->height;
 
-		int x = blockIdx.x * blockDim.x + threadIdx.x;
-		int y = blockIdx.y * blockDim.y + threadIdx.y;
-		int index = x + width * y;
+		int oldx = blockIdx.x * blockDim.x + threadIdx.x;
+		int oldy = blockIdx.y * blockDim.y + threadIdx.y;
 
-		if (x >= width || y >= height)
+		if (oldx >= width || oldy >= height)
 		{
 			return;
 		}
-		
+
+		int oldIndex = oldx + width * oldy;
+
+		int index = devParams->pixelValues[oldIndex];
+		int x = index % width;
+		int y = index / width;
+
 		curandState state;
 		curand_init(index + seed, 0, 0, &state);
 
@@ -333,7 +359,7 @@ namespace acr
 		r.o = scene->camera.position;
 		r.d = get_pixel_dir(scene->camera, i, -j);
 
-		Color4 contribution = rayColor<5>(r, Color3(1,1,1), scene, state);
+		Color4 contribution = rayColor<MAX_BOUNCES>(r, Color3(1,1,1), scene, state, devParams->pixelKeys+index);
 		
 		if (frames > 0)
 		{
@@ -348,6 +374,7 @@ namespace acr
 
 	int frameCount = 0;
 	int frameMod = 30;
+	int pixelMapFrameMod = 200;
 	float frameRate = 0.0f;
 	int oldElapsedTime = 0;
 
@@ -397,17 +424,15 @@ namespace acr
 			glVertex3f(1.0f,0,0);
 		glEnd();
 
-		/*glColor3f(1, 1, 1);
-		glRasterPos2f(10, 10);
-
-		std::string frameRateString = std::to_string(frameRate) + " fps";
-		for (int i = 0; i < frameRateString.length(); i++) {
-			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, frameRateString[i]);
-		}*/
-
 		// swap buffers
 		glutSwapBuffers();
 		glutPostRedisplay();
+
+		// reassign pixels
+		if (frameCount % pixelMapFrameMod == 0){
+			thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());
+			thrust::fill(pixelKeys.begin(), pixelKeys.end(), 0);
+		}
 
 		// update framerate
 		if (frameCount % frameMod == 0 && frameCount != 0){

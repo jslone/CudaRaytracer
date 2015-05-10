@@ -139,7 +139,6 @@ namespace acr
 			boundingBox.min = math::min(boundingBox.min, objs[i].boundingBox.min);
 		}
 
-
 		bih = BIH<Object>(objs,boundingBox);
 		objects = vector<Object>(objs);
 	}
