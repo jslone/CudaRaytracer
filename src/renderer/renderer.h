@@ -44,6 +44,9 @@ namespace acr
 		GLuint textureId;
 
 		uint64_t framesNoMove;
+
+		thrust::device_vector<int> pixelKeys;
+		thrust::device_vector<int> pixelValues;
 	};
 
 } // namespace acr
