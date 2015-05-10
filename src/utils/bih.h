@@ -18,16 +18,16 @@ namespace acr
 		BIH(const BIH &) = default;
 
 		BIH(const thrust::host_vector<T> &hObjs, const BoundingBox &bb)
-			: objs(hObjs)
+			: boundingBox(bb)
+			, objs(hObjs)
 		{
-			thrust::host_vector<Node> hTree(MAX_SIZE);
-
-			sift(hTree, 0, bb, hObjs, 0, hObjs.size());
-
-			tree = vector<Node>(hTree);
+			sift(0, boundingBox, hObjs, 0, hObjs.size());
 		}
 
-		void intersect(const Ray &r, HitInfo &info);
+		bool intersect(const Ray &r, HitInfo &info, void *data)
+		{
+			return treeIntersect(r, info, data, boundingBox);
+		}
 
 		const static size_t MAX_SIZE = (1 << (MAX_DEPTH - 1));
 	private:
@@ -57,15 +57,15 @@ namespace acr
 
 		Node* getLeftChild(const Node *n)
 		{
-			return &tree[getLeftChildIdx(tree.position(n))];
+			return &tree[getLeftChildIdx(tree - n)];
 		}
 
 		Node* getRightChild(const Node *n)
 		{
-			return &tree[getRightChildIdx(tree.position(n))];
+			return &tree[getRightChildIdx(tree - n)];
 		}
 
-		bool sift(thrust::host_vector<Node> tree, int index, const BoundingBox &bb, thrust::host_vector<T> objs, size_t start, size_t end)
+		bool sift(int index, const BoundingBox &bb, thrust::host_vector<T> objs, size_t start, size_t end)
 		{
 			tree[index].start = start;
 			tree[index].end = end;
@@ -141,8 +141,8 @@ namespace acr
 			tree[index].left = maxL;
 			tree[index].right = minR;
 
-			if (sift(tree, getLeftChildIdx(index), lBB, objs, start, i) ||
-				sift(tree, getRightChildIdx(index), rBB, objs, i, end))
+			if (sift(getLeftChildIdx(index), lBB, objs, start, i) ||
+				sift(getRightChildIdx(index), rBB, objs, i, end))
 			{
 				tree[index].isLeaf = true;
 			}
@@ -150,7 +150,70 @@ namespace acr
 			return false;
 		}
 
-		vector<Node> tree;
+		bool treeIntersect(const Ray &r, HitInfo &info, const void *data, const BoundingBox &bb)
+		{
+			bool intersected = false;
+			
+			int treeIdx[MAX_DEPTH];
+			BoundingBox treeBB[MAX_DEPTH];
+			int depth = 0;
+
+			treeIdx[0] = 0;
+			treeBB[0] = bb;
+
+			BoundingBox::Args bbArgs;
+			bbArgs.invD = 1.0f / r.d;
+			bbArgs.sign.x = bbArgs.invD.x < 0;
+			bbArgs.sign.y = bbArgs.invD.y < 0;
+			bbArgs.sign.z = bbArgs.invD.z < 0;
+
+			while (depth >= 0)
+			{
+				int i = treeIdx[depth];
+				const BoundingBox &bb = treeBB[depth];
+				const Node &n = tree[i];
+
+				// intersect objects
+				if (n.isLeaf)
+				{
+					for (int i = n.start; i < n.end; i++)
+					{
+						intersected |= objs[i].intersect(r, info, data);
+					}
+				}
+				// intersect children
+				else
+				{
+					BoundingBox lBB = bb;
+					BoundingBox rBB = bb;
+
+					lBB.max[n.axis] = n.left;
+					rBB.min[n.axis] = n.right;
+
+					bool hitL = lBB.intersect(r, info, args);
+					bool hitR = rBB.intersect(r, info, args);
+
+					if (hitR)
+					{
+						treeIdx[depth] = getRightChildIdx(i);
+						treeBB[depth] = rBB;
+						depth++;
+					}
+					if (hitL)
+					{
+						treeIdx[depth] = getLeftChildIdx(i);
+						treeBB[depth] = lBB;
+						depth++;
+					}
+				}
+				depth--;
+			}
+
+			return intersected;
+		}
+
+		BoundingBox boundingBox;
+		Node tree[MAX_SIZE];
 		vector<T> objs;
 	};
 }

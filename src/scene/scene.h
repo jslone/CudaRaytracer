@@ -39,7 +39,7 @@ namespace acr
 		BoundingBox transformBoundingBox(BoundingBox aabb);
 		
 		__host__ __device__
-		bool intersect(const Ray &r, HitInfo &info, const vector<Mesh> &meshes);
+		bool intersect(const Ray &r, HitInfo &info, const void* meshes);
 	};
 
 	class Light
