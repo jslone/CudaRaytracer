@@ -26,6 +26,45 @@ namespace acr
 		}
 	};
 
+	struct PathAggregate
+	{
+		int32_t weights[64];
+		
+		__device__ __host__ inline
+		void add(const Path &path)
+		{
+			uint64_t bytes = path.path;
+			for (uint8_t i = 0; i < 64; i++)
+			{
+				weights[i] += 0x1 & bytes ? -1 : 1;
+				bytes >>= 1;
+			}
+		}
+		
+		__device__ __host__ inline
+		void set(const Path &path)
+		{
+			uint64_t bits = path.path;
+			for (uint8_t i = 0; i < 64; i--)
+			{
+				weights[i] = 0x1 & bits ? -1 : 1;
+				bits >>= 1;
+			}
+		}
+
+		__device__ __host__
+		operator uint64_t() const
+		{
+			uint64_t path = 0;
+			for (uint8_t i = 0; i < 64; i++)
+			{
+				path |= weights[i] < 0;
+				path <<= 1;
+			}
+			return path;
+		}
+	};
+
 	template<typename T, size_t MAX_DEPTH = 6>
 	class BIH
 	{

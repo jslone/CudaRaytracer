@@ -15,7 +15,7 @@ namespace acr
 	{
 		char sceneData[sizeof(Scene)];
 		uint32_t width,height,samples;\
-		double* pixelKeys;
+		PathAggregate* paths;
 		int* pixelValues;
 	};
 
@@ -128,7 +128,8 @@ namespace acr
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
 
 		// malloc initialize pixel map
-		pixelKeys = thrust::device_vector<double>(dim.x*dim.y);
+		pixelKeyData = thrust::device_vector<PathAggregate>(dim.x*dim.y);
+		pixelKeys = thrust::device_vector<uint64_t>(dim.x*dim.y);
 		pixelValues = thrust::device_vector<int>(dim.x*dim.y);
 
 		// fill pixel keys and values
@@ -171,7 +172,7 @@ namespace acr
 		params.width = dim.x;
 		params.height = dim.y;
 		params.samples = dim.z;
-		params.pixelKeys = thrust::raw_pointer_cast(pixelKeys.data());
+		params.paths = thrust::raw_pointer_cast(pixelKeyData.data());
 		params.pixelValues = thrust::raw_pointer_cast(pixelValues.data());
 
 		Scene *myScene = (Scene*)&params;
@@ -376,14 +377,13 @@ namespace acr
 			screen[index] *= (float(frames) / float(frames + 1));
 			screen[index] += (contribution / float(frames + 1));
 			
-			devParams->pixelKeys[oldIndex] *= (double(frames) / double(frames + 1));
-			devParams->pixelKeys[oldIndex] += (path.path) / double(frames + 1);
+			devParams->paths[oldIndex].add(path);
 		}
 		// reset
 		else
 		{
 			screen[index] = contribution;
-			devParams->pixelKeys[oldIndex] = double(path.path);
+			devParams->paths[oldIndex].set(path);
 		}
 	}
 
@@ -456,6 +456,7 @@ namespace acr
 		// reassign pixels
 		if (framesNoMove % pixelMapFrameMod == pixelMapFrameMod - 1)
 		{
+			thrust::copy(pixelKeyData.begin(), pixelKeyData.end(), pixelKeys.begin());
 			thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());
 		}
 
