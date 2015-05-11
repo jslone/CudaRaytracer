@@ -389,12 +389,22 @@ namespace acr
 
 	int frameCount = 0;
 	int frameMod = 30;
-	int pixelMapFrameMod = 100;
+	int pixelMapFrameMod = 60;
 	float frameRate = 0.0f;
 	int oldElapsedTime = 0;
+	int startTime;
 
 	void Renderer::render()
 	{
+		if (frameCount == 0)
+		{
+			startTime = glutGet(GLUT_ELAPSED_TIME);
+		}
+		if (frameCount == 200)
+		{
+			std::cout << "Time for 200 frames: " << glutGet(GLUT_ELAPSED_TIME) - startTime << std::endl;
+		}
+
 		// bind draw buffer to device ptr
 		Color4 *screen;
 		cudaError_t err = cudaGLMapBufferObject((void**)&screen, drawBuffer);
@@ -446,7 +456,7 @@ namespace acr
 		// reassign pixels
 		if (framesNoMove % pixelMapFrameMod == pixelMapFrameMod - 1)
 		{
-			//thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());
+			thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());
 		}
 
 		// update framerate
