@@ -93,16 +93,16 @@ namespace acr
 		~Scene();
 
 		__device__
-		bool intersect(const Ray& r, HitInfo &info);
+		bool intersect(const Ray& r, HitInfo &info, Path &path);
 
 		__device__
-		Color3 lightPoint(const math::vec3 &pos, const math::vec3 &norm, curandState &state);
+		Color3 lightPoint(const math::vec3 &pos, const math::vec3 &norm, curandState &state, Path &path);
 
 		__device__
-		Color3 pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state);
+		Color3 pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state, Path &path);
 
 		__device__
-		Color3 spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm);
+		Color3 spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, Path &path);
 
 	private:
 		void loadScene(const aiScene* scene);

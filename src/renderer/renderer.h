@@ -45,7 +45,7 @@ namespace acr
 
 		uint64_t framesNoMove;
 
-		thrust::device_vector<int> pixelKeys;
+		thrust::device_vector<double> pixelKeys;
 		thrust::device_vector<int> pixelValues;
 	};
 

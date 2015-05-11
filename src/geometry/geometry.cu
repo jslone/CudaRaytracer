@@ -51,7 +51,8 @@ namespace acr
 
 	bool Mesh::intersect(const Ray &r, HitInfo &info)
 	{
-		if (boundingBox.intersect(r, info) && faces.intersect(r, info, &vertices[0]))
+		Path p;
+		if (boundingBox.intersect(r, info) && faces.intersect(r, info, &vertices[0], p))
 		{
 			info.materialIndex = materialIndex;
 			return true;

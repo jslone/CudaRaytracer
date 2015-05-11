@@ -10,6 +10,22 @@
 
 namespace acr
 {
+	struct Path
+	{
+		__device__ __host__
+		Path() : path(0), length(0) {}
+		uint64_t path;
+		uint64_t length;
+
+		__device__ __host__ inline
+		void append(uint64_t flag, uint64_t size)
+		{
+			length += size;
+			if (length <= sizeof(path))
+				path |= flag << (sizeof(path) - length);
+		}
+	};
+
 	template<typename T, size_t MAX_DEPTH = 6>
 	class BIH
 	{
@@ -26,9 +42,9 @@ namespace acr
 		}
 
 		__device__
-		bool intersect(const Ray &r, HitInfo &info, void *data)
+		bool intersect(const Ray &r, HitInfo &info, void *data, Path &path)
 		{
-			return treeIntersect(r, info, data, boundingBox);
+			return treeIntersect(r, info, data, boundingBox, path);
 		}
 
 		const static size_t MAX_SIZE = (1 << MAX_DEPTH) - 1;
@@ -152,7 +168,7 @@ namespace acr
 		}
 
 		__device__
-		bool treeIntersect(const Ray &r, HitInfo &info, const void *data, const BoundingBox &bb)
+		bool treeIntersect(const Ray &r, HitInfo &info, const void *data, const BoundingBox &bb, Path &path)
 		{
 			bool intersected = false;
 			
@@ -162,6 +178,8 @@ namespace acr
 
 			treeIdx[0] = 0;
 			treeBB[0] = bb;
+
+			uint32_t bitsAppended = 0;
 
 			BoundingBox::Args bbArgs;
 			
@@ -196,22 +214,36 @@ namespace acr
 					bool hitL = lBB.intersect(r, info, bbArgs);
 					bool hitR = rBB.intersect(r, info, bbArgs);
 
+					int lIdx = getLeftChildIdx(i);
+					int rIdx = getRightChildIdx(i);
+
 					if (hitR)
 					{
-						treeIdx[depth] = getRightChildIdx(i);
+						treeIdx[depth] = rIdx;
 						treeBB[depth] = rBB;
 						depth++;
 					}
 					if (hitL)
 					{
-						treeIdx[depth] = getLeftChildIdx(i);
+						treeIdx[depth] = lIdx;
 						treeBB[depth] = lBB;
 						depth++;
 					}
+					
+					// left got more than right
+					bool lBigger = (tree[lIdx].end - tree[lIdx].start) > (tree[rIdx].end - tree[rIdx].start);
+					
+					// append to msb 00 for neither hit, 11 for both, 10 for bigger hit, 01 for smaller hit
+					path.append(hitL << (lBigger) | hitR << (!lBigger), 2);
+					bitsAppended += 2;
 				}
 				depth--;
 			}
-
+			uint32_t padding = 2 * MAX_SIZE - bitsAppended;
+			if (padding > 0)
+			{
+				path.append(0, padding);
+			}
 			return intersected;
 		}
 

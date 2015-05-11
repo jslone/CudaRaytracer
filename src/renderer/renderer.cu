@@ -15,7 +15,7 @@ namespace acr
 	{
 		char sceneData[sizeof(Scene)];
 		uint32_t width,height,samples;\
-		int* pixelKeys;
+		double* pixelKeys;
 		int* pixelValues;
 	};
 
@@ -128,7 +128,7 @@ namespace acr
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest);
 
 		// malloc initialize pixel map
-		pixelKeys = thrust::device_vector<int>(dim.x*dim.y);
+		pixelKeys = thrust::device_vector<double>(dim.x*dim.y);
 		pixelValues = thrust::device_vector<int>(dim.x*dim.y);
 
 		// fill pixel keys and values
@@ -230,22 +230,21 @@ namespace acr
 
 	template<int N>
 	__device__ inline
-	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state, int* count);
+	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state, Path &path);
 
 	template<int N>
 	__device__ inline
-	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state, int* count)
+	Color4 rayColor(const Ray &r, const Color3 source, Scene *scene, curandState state, Path &path)
 	{
 		HitInfo info;
 		info.t = FLT_MAX;
-		Color4 contribution = Color4(0, 0, 0, 1);
-		if (scene->intersect(r, info))
+		if (scene->intersect(r, info, path))
 		{
 			Material &mat = scene->materials[info.materialIndex];
 			
 			// direct illum
 			Color3 c = mat.ambient
-					+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal, state);
+					+ mat.diffuse * scene->lightPoint(info.point.position, info.point.normal, state, path);
 
 			// indirect illum
 			Color3 nSource;
@@ -278,7 +277,7 @@ namespace acr
 				// Absorbtion
 				else
 				{
-					*count += MAX_BOUNCES - N; //Maybe set to MAX_BOUNCES - (N-1);
+					//count = MAX_BOUNCES - N; //Maybe set to MAX_BOUNCES - (N-1);
 					return Color4(c, 1);
 				}
 			}
@@ -309,18 +308,17 @@ namespace acr
 					nr.d = math::reflect(r.d, norm);
 				}
 			}
-			*count += MAX_BOUNCES - (N - 1);
-			contribution = Color4(c, 1) + rayColor<N - 1>(nr, nSource, scene, state, count);
+			return Color4(c, 1) + rayColor<N - 1>(nr, nSource, scene, state, path);
 		}
-
-		return contribution;
+		//count = MAX_BOUNCES - N;
+		return Color4(0, 0, 0, 1);
 	}
 
 	template<>
 	__device__ inline
-	Color4 rayColor<0>(const Ray &r, const Color3 source, Scene *scene, curandState state, int* count)
+	Color4 rayColor<0>(const Ray &r, const Color3 source, Scene *scene, curandState state, Path &path)
 	{
-		*count += MAX_BOUNCES;
+		//count = MAX_BOUNCES;
 		return Color4(0, 0, 0, 1);
 	}
 
@@ -339,8 +337,19 @@ namespace acr
 		}
 
 		int oldIndex = oldx + width * oldy;
+		Path path;
 
-		int index = devParams->pixelValues[oldIndex];
+		int index;
+		if (frames == 0)
+		{
+			devParams->pixelValues[oldIndex] = oldIndex;
+			index = oldIndex;
+		}
+		else
+		{
+			index = devParams->pixelValues[oldIndex];
+		}
+		
 		int x = index % width;
 		int y = index / width;
 
@@ -359,22 +368,28 @@ namespace acr
 		r.o = scene->camera.position;
 		r.d = get_pixel_dir(scene->camera, i, -j);
 
-		Color4 contribution = rayColor<MAX_BOUNCES>(r, Color3(1,1,1), scene, state, devParams->pixelKeys+oldIndex);
-		
+		Color4 contribution = rayColor<MAX_BOUNCES>(r, Color3(1,1,1), scene, state, path);
+
+		// average
 		if (frames > 0)
 		{
 			screen[index] *= (float(frames) / float(frames + 1));
 			screen[index] += (contribution / float(frames + 1));
+			
+			devParams->pixelKeys[oldIndex] *= (double(frames) / double(frames + 1));
+			devParams->pixelKeys[oldIndex] += (path.path) / double(frames + 1);
 		}
+		// reset
 		else
 		{
 			screen[index] = contribution;
+			devParams->pixelKeys[oldIndex] = double(path.path);
 		}
 	}
 
 	int frameCount = 0;
 	int frameMod = 30;
-	int pixelMapFrameMod = 200;
+	int pixelMapFrameMod = 100;
 	float frameRate = 0.0f;
 	int oldElapsedTime = 0;
 
@@ -429,10 +444,9 @@ namespace acr
 		glutPostRedisplay();
 
 		// reassign pixels
-		if (false && frameCount % pixelMapFrameMod == pixelMapFrameMod - 1)
+		if (framesNoMove % pixelMapFrameMod == pixelMapFrameMod - 1)
 		{
-			thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());
-			thrust::fill(pixelKeys.begin(), pixelKeys.end(), 0);
+			//thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());
 		}
 
 		// update framerate

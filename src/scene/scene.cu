@@ -73,7 +73,7 @@ namespace acr
 		//Load meshes
 		thrust::host_vector<Mesh> hMeshes(scene->mNumMeshes);
 		loadMeshes(scene,hMeshes);
-		printf("Successfully loaded %d mesh(es).\n", meshes.size());
+		printf("Successfully loaded %d mesh(es).\n", hMeshes.size());
 
 		//Load object hierarchy
 		loadObjects(scene,camName,lightMap,hLights,hMeshes);
@@ -201,12 +201,12 @@ namespace acr
 		return i;
 	}
 
-	bool Scene::intersect(const Ray &r, HitInfo &info)
+	bool Scene::intersect(const Ray &r, HitInfo &info, Path &path)
 	{
-		return objects.intersect(r, info, &meshes);
+		return objects.intersect(r, info, &meshes, path);
 	}
 
-	Color3 Scene::pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state)
+	Color3 Scene::pointLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, curandState &state, Path &path)
 	{
 		math::vec3 dir = (l.position + 0.5f*math::randNorm(&state)) - pos;
 		float t = math::length(dir);
@@ -223,7 +223,7 @@ namespace acr
 
 		HitInfo info;
 		info.t = t;
-		if (intersect(r, info) && info.t + math::epsilon<float>() < t)
+		if (intersect(r, info, path) && info.t + math::epsilon<float>() < t)
 		{
 			return Color3(0,0,0);
 		}
@@ -231,7 +231,7 @@ namespace acr
 	}
 
 
-	Color3 Scene::spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm)
+	Color3 Scene::spotLightAccum(const Light &l, const math::vec3 &pos, const math::vec3 &norm, Path &path)
 	{
 		math::vec3 dir = l.position - pos;
 		float t = math::length(dir);
@@ -263,14 +263,14 @@ namespace acr
 
 		HitInfo info;
 		info.t = t;
-		if (intersect(r, info) && info.t + math::epsilon<float>() < t)
+		if (intersect(r, info, path) && info.t + math::epsilon<float>() < t)
 		{
 			return Color3(0, 0, 0);
 		}
 		return c;
 	}
 
-	Color3 Scene::lightPoint(const math::vec3 &pos, const math::vec3 &norm, curandState &state)
+	Color3 Scene::lightPoint(const math::vec3 &pos, const math::vec3 &norm, curandState &state, Path &path)
 	{
 		Color3 light(0, 0, 0);
 		for (int i = 0; i < lights.size(); i++)
@@ -281,10 +281,10 @@ namespace acr
 			{
 				case Light::Type::DIRECTIONAL:
 				case Light::Type::SPOT:
-					light += spotLightAccum(l, pos, norm);
+					light += spotLightAccum(l, pos, norm, path);
 					break;
 				case Light::Type::POINT:
-					light += pointLightAccum(l, pos, norm, state);
+					light += pointLightAccum(l, pos, norm, state, path);
 					break;
 			}
 		}
