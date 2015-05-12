@@ -4,6 +4,7 @@ title: CUDA Raytracer - Proposal
 ---
 
 # Final Report
+
 ## View our final report document:
 <a href="docs/report.pdf">Final Report PDF</a>
 
