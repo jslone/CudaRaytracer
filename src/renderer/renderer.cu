@@ -377,13 +377,13 @@ namespace acr
 			screen[index] *= (float(frames) / float(frames + 1));
 			screen[index] += (contribution / float(frames + 1));
 			
-			devParams->paths[oldIndex].add(path);
+			//devParams->paths[oldIndex].add(path);
 		}
 		// reset
 		else
 		{
 			screen[index] = contribution;
-			devParams->paths[oldIndex].set(path);
+			//devParams->paths[oldIndex].set(path);
 		}
 	}
 
@@ -456,8 +456,8 @@ namespace acr
 		// reassign pixels
 		if (framesNoMove % pixelMapFrameMod == pixelMapFrameMod - 1)
 		{
-			thrust::copy(pixelKeyData.begin(), pixelKeyData.end(), pixelKeys.begin());
-			thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());
+			/*thrust::copy(pixelKeyData.begin(), pixelKeyData.end(), pixelKeys.begin());
+			thrust::stable_sort_by_key(pixelKeys.begin(), pixelKeys.end(), pixelValues.begin());*/
 		}
 
 		// update framerate

@@ -20,9 +20,9 @@ namespace acr
 		__device__ __host__ inline
 		void append(uint64_t flag, uint64_t size)
 		{
-			length += size;
+			/*length += size;
 			if (length <= sizeof(path))
-				path |= flag << (sizeof(path) - length);
+				path |= flag << (sizeof(path) - length);*/
 		}
 	};
 
@@ -33,34 +33,34 @@ namespace acr
 		__device__ __host__ inline
 		void add(const Path &path)
 		{
-			uint64_t bytes = path.path;
+			/*uint64_t bytes = path.path;
 			for (uint8_t i = 0; i < 64; i++)
 			{
 				weights[i] += 0x1 & bytes ? -1 : 1;
 				bytes >>= 1;
-			}
+			}*/
 		}
 		
 		__device__ __host__ inline
 		void set(const Path &path)
 		{
-			uint64_t bits = path.path;
+			/*uint64_t bits = path.path;
 			for (uint8_t i = 0; i < 64; i--)
 			{
 				weights[i] = 0x1 & bits ? -1 : 1;
 				bits >>= 1;
-			}
+			}*/
 		}
 
 		__device__ __host__
 		operator uint64_t() const
 		{
 			uint64_t path = 0;
-			for (uint8_t i = 0; i < 64; i++)
+			/*for (uint8_t i = 0; i < 64; i++)
 			{
 				path |= weights[i] < 0;
 				path <<= 1;
-			}
+			}*/
 			return path;
 		}
 	};
@@ -229,21 +229,15 @@ namespace acr
 
 			while (depth >= 0)
 			{
-				int i = treeIdx[depth];
-				const BoundingBox &bb = treeBB[depth];
-				const Node &n = tree[i];
+				// traverse tree
+				while (depth >= 0)
+				{
+					int i = treeIdx[depth];
+					const BoundingBox &bb = treeBB[depth];
+					const Node &n = tree[i];
 
-				// intersect objects
-				if (n.isLeaf)
-				{
-					for (int i = n.start; i < n.end; i++)
-					{
-						intersected |= objs[i].intersect(r, info, data);
-					}
-				}
-				// intersect children
-				else
-				{
+					if (n.isLeaf) break;
+
 					BoundingBox lBB = bb;
 					BoundingBox rBB = bb;
 
@@ -269,6 +263,8 @@ namespace acr
 						depth++;
 					}
 					
+					depth--;
+
 					// left got more than right
 					bool lBigger = (tree[lIdx].end - tree[lIdx].start) > (tree[rIdx].end - tree[rIdx].start);
 					
@@ -276,7 +272,23 @@ namespace acr
 					path.append(hitL << (lBigger) | hitR << (!lBigger), 2);
 					bitsAppended += 2;
 				}
-				depth--;
+
+				if (depth >= 0)
+				{
+					int i = treeIdx[depth];
+					const BoundingBox &bb = treeBB[depth];
+					const Node &n = tree[i];
+
+					// intersect objects
+					if (n.isLeaf)
+					{
+						for (int i = n.start; i < n.end; i++)
+						{
+							intersected |= objs[i].intersect(r, info, data);
+						}
+						depth--;
+					}
+				}
 			}
 			uint32_t padding = 2 * MAX_SIZE - bitsAppended;
 			if (padding > 0)
